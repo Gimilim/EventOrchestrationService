@@ -8,20 +8,32 @@ namespace EventOrchestrationService.Controllers;
 public class EventController(IEventService eventService) : ControllerBase
 {
     /// <summary>
-    /// Получить список всех событий
+    /// Получить список всех событий.
     /// </summary>
-    /// <returns>Список всех событий</returns>
+    /// <param name="title">Опциональный, получить события по полю title. Регистронезависимый, частичное совпадение.</param>
+    /// <param name="from">Опциональный, события, которые начинаются не раньше указанной даты.</param>
+    /// <param name="to">Опциональный, события, которые заканчиваются не позже указанной даты.</param>
+    /// <param name="page">Опциональный (по умолчанию = 1), страница, которую необходимо вернуть.</param>
+    /// <param name="pageSize">Опциональный (по умолчанию = 10), количество элементов на странице.</param>
+    /// <returns>
+    /// Объект PaginatedResult содержащий:
+    /// - TotalCount: общее количество отфильтрованных событий
+    /// - Items: список событий на текущей странице
+    /// - Page: текущая страница
+    /// - PageSize: фактическое количество элементов на странице
+    /// </returns>
+    /// <response code="200">Успешный возврат пагинированного списка</response>
     [HttpGet]
-    public IActionResult GetAllEvents()
+    public IActionResult GetEvents(string? title, DateTime? from, DateTime? to, int page = 1, int pageSize = 10)
     {
-        return Ok(eventService.GetAllEvents());
+        return Ok(eventService.GetEvents(title, from, to, page, pageSize));
     }
 
     /// <summary>
-    /// Получить событие по ID
+    /// Получить событие по ID.
     /// </summary>
-    /// <param name="id">ID события</param>
-    /// <returns>Событие с указанным ID</returns>
+    /// <param name="id">ID события.</param>
+    /// <returns>Событие с указанным ID.</returns>
     [HttpGet("{id:int}")]
     public IActionResult GetEventById(int id)
     {
@@ -36,10 +48,10 @@ public class EventController(IEventService eventService) : ControllerBase
     }
 
     /// <summary>
-    /// Создать новое событие
+    /// Создать новое событие.
     /// </summary>
-    /// <param name="newEvent">Данные события</param>
-    /// <returns>Созданное событие</returns>
+    /// <param name="newEvent">Данные события.</param>
+    /// <returns>Созданное событие.</returns>
     [HttpPost]
     public IActionResult Create([FromBody] Event newEvent)
     {
@@ -54,11 +66,11 @@ public class EventController(IEventService eventService) : ControllerBase
     }
 
     /// <summary>
-    /// Обновить существующее событие
+    /// Обновить существующее событие.
     /// </summary>
-    /// <param name="id">ID события</param>
-    /// <param name="updateEventRequest">Новые данные события</param>
-    /// <returns>Обновлённое событие</returns>
+    /// <param name="id">ID события.</param>
+    /// <param name="updateEventRequest">Новые данные события.</param>
+    /// <returns>Обновлённое событие.</returns>
     [HttpPut("{id:int}")]
     public IActionResult Update(int id, [FromBody] Event updateEventRequest)
     {
@@ -78,10 +90,10 @@ public class EventController(IEventService eventService) : ControllerBase
     }
 
     /// <summary>
-    /// Удалить событие
+    /// Удалить событие.
     /// </summary>
-    /// <param name="id">ID события</param>
-    /// <returns>Статус удаления</returns>
+    /// <param name="id">ID события.</param>
+    /// <returns>Статус удаления.</returns>
     [HttpDelete("{id:int}")]
     public IActionResult Delete(int id)
     {
