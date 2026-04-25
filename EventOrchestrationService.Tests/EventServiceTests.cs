@@ -1,11 +1,85 @@
+using EventOrchestrationService.Data;
 using EventOrchestrationService.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace EventOrchestrationService.Tests;
 
-public class EventServiceTests
+public class EventServiceTests : IDisposable
 {
+    private readonly AppDbContext _context;
+    private readonly IEventService _service;
+
+    public EventServiceTests()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+        _context = new AppDbContext(options);
+        _context.Database.OpenConnection();
+        _context.Database.EnsureCreated();
+        _service = new EventService(_context);
+    }
+
+    public void Dispose()
+    {
+        _context?.Database.CloseConnection();
+        _context?.Dispose();
+    }
+
+    private void SeedDatabase()
+    {
+        _context.Events.AddRange(
+            new Event
+            {
+                Id = 1, Title = "Title1", Description = "Description1", StartAt = DateTime.Now.AddDays(-5),
+                EndAt = DateTime.Now.AddDays(3)
+            },
+            new Event
+            {
+                Id = 2, Title = "Title2", Description = "Description2", StartAt = new DateTime(2025, 1, 30),
+                EndAt = new DateTime(2025, 12, 30)
+            },
+            new Event
+            {
+                Id = 3, Title = "Title3", Description = "Description3", StartAt = DateTime.Now.AddDays(-8),
+                EndAt = DateTime.Now.AddDays(5)
+            },
+            new Event
+            {
+                Id = 4, Title = "ABC_Title4", Description = "Description4", StartAt = DateTime.Now.AddDays(-8),
+                EndAt = DateTime.Now.AddDays(5)
+            },
+            new Event
+            {
+                Id = 5, Title = "abc_Title5", Description = "Description5", StartAt = new DateTime(2055, 1, 30),
+                EndAt = DateTime.Now.AddDays(5)
+            },
+            new Event
+            {
+                Id = 6, Title = "AbC_Title6", Description = "Description6", StartAt = new DateTime(2055, 1, 30),
+                EndAt = new DateTime(2077, 12, 30)
+            },
+            new Event
+            {
+                Id = 7, Title = "Title7", Description = "Description7", StartAt = new DateTime(2055, 1, 30),
+                EndAt = new DateTime(2077, 12, 30)
+            },
+            new Event
+            {
+                Id = 8, Title = "Title8", Description = "Description8", StartAt = new DateTime(2025, 1, 30),
+                EndAt = new DateTime(2077, 12, 30)
+            },
+            new Event
+            {
+                Id = 9, Title = "Title9", Description = "Description9", StartAt = new DateTime(2027, 1, 30),
+                EndAt = new DateTime(2027, 12, 30)
+            }
+        );
+        _context.SaveChanges();
+    }
+
     /// <summary>
-    /// Создание события с вадидными данными
+    /// Создание события с валидными данными
     /// Проверяем, что событию присваивается новый ИД todo будет переделано с введением dbcontext
     /// Проверяем, что каждое из полей события записано
     /// </summary>
@@ -13,9 +87,6 @@ public class EventServiceTests
     public void CreateEvent_WithValidData_Success()
     {
         // Arrange
-        var eventService = new EventService();
-        const int targetId = 10;
-
         var validEventToAdd = new Event
         {
             Title = "testTitle1",
@@ -25,18 +96,13 @@ public class EventServiceTests
         };
 
         // Act
-        var result = eventService.CreateEvent(validEventToAdd);
+        var result = _service.CreateEvent(validEventToAdd);
 
         // Assert
-        // todo тест будет переписан когда данные будут храниться в контексте
-        Assert.Equal(targetId, result.Id);
         Assert.Equal(validEventToAdd.Title, result.Title);
         Assert.Equal(validEventToAdd.Description, result.Description);
         Assert.Equal(validEventToAdd.StartAt, result.StartAt);
         Assert.Equal(validEventToAdd.EndAt, result.EndAt);
-
-        // todo заглушка из-за отсутствия dbContext'а, удаление только что созданного события чтобы оно не влияло на другие тесты
-        eventService.DeleteEvent(targetId);
     }
 
     /// <summary>
@@ -49,13 +115,14 @@ public class EventServiceTests
     public void GetEvents_WhenEventsExist_ReturnsPaginatedResult()
     {
         // Arrange
-        var eventService = new EventService();
+        SeedDatabase();
+
         const int defaultPage = 1;
         const int targetPage = 3;
 
         // Act
-        var getDefaultEventsResult = eventService.GetEvents();
-        var getEventsResultWithPageParameter = eventService.GetEvents(page: 3);
+        var getDefaultEventsResult = _service.GetEvents();
+        var getEventsResultWithPageParameter = _service.GetEvents(page: 3);
 
         // Assert
         Assert.NotNull(getDefaultEventsResult);
@@ -73,16 +140,26 @@ public class EventServiceTests
     public void GetEventById_WithValidId_ReturnsEvent()
     {
         // Arrange
-        var eventService = new EventService();
-        const int targetId = 2;
+        var validEventToAdd = new Event
+        {
+            Title = "testTitle1",
+            Description = "testDescription1",
+            StartAt = new DateTime(2099, 12, 30),
+            EndAt = new DateTime(2100, 12, 30)
+        };
 
-        //todo будет сид данных в фейковый контекст для правильной проверки. Пока берем просто конкретное событие из файла сервиса
+        var created = _service.CreateEvent(validEventToAdd);
 
         // Act
-        var testedEvent = eventService.GetEventById(targetId);
+        var result = _service.GetEventById(validEventToAdd.Id);
 
         // Assert
-        Assert.Equal(targetId, testedEvent.Id);
+        Assert.NotNull(result);
+        Assert.Equal(created.Id, result.Id);
+        Assert.Equal(created.Title, result.Title);
+        Assert.Equal(created.Description, result.Description);
+        Assert.Equal(created.StartAt, result.StartAt);
+        Assert.Equal(created.EndAt, result.EndAt);
     }
 
     /// <summary>
@@ -93,10 +170,15 @@ public class EventServiceTests
     public void Update_WithValidData_ReturnsUpdatedEvent()
     {
         // Arrange
-        var eventService = new EventService();
-        //todo будет сид данных в фейковый контекст для правильной проверки. Пока берем просто конкретное событие из файла сервиса
+        var validEventToAdd = new Event
+        {
+            Title = "testTitle1",
+            Description = "testDescription1",
+            StartAt = new DateTime(2099, 12, 30),
+            EndAt = new DateTime(2100, 12, 30)
+        };
 
-        const int targetId = 2;
+        var created = _service.CreateEvent(validEventToAdd);
 
         var updateRequestData = new Event
         {
@@ -107,9 +189,10 @@ public class EventServiceTests
         };
 
         // Act
-        var updateResult = eventService.UpdateEvent(targetId, updateRequestData);
+        var updateResult = _service.UpdateEvent(created.Id, updateRequestData);
 
         // Assert
+        Assert.NotNull(updateResult);
         Assert.Equal(updateRequestData.Title, updateResult.Title);
         Assert.Equal(updateRequestData.Description, updateResult.Description);
         Assert.Equal(updateRequestData.StartAt, updateResult.StartAt);
@@ -122,16 +205,22 @@ public class EventServiceTests
     /// Проверяем, что событие успешно удаляется
     /// </summary>
     [Fact]
-    public void Delete_WithValidId_ReturnsSuccess()
+    public void Delete_WithValidId_DeleteSuccess()
     {
-        // Arrange
-        var eventService = new EventService();
-        const int targetId = 8;
+        var validEventToAdd = new Event
+        {
+            Title = "testTitle1",
+            Description = "testDescription1",
+            StartAt = new DateTime(2099, 12, 30),
+            EndAt = new DateTime(2100, 12, 30)
+        };
+
+        var created = _service.CreateEvent(validEventToAdd);
 
         // Act
-        var getEventBeforeDelete = eventService.GetEventById(targetId);
-        var deleteResult = eventService.DeleteEvent(targetId);
-        var getEventAfterDeleting = eventService.GetEventById(targetId);
+        var getEventBeforeDelete = _service.GetEventById(created.Id);
+        var deleteResult = _service.DeleteEvent(created.Id);
+        var getEventAfterDeleting = _service.GetEventById(created.Id);
 
         // Assert
         Assert.NotNull(getEventBeforeDelete);
@@ -141,24 +230,21 @@ public class EventServiceTests
 
     /// <summary>
     /// Получить события с фильтром по названию
-    /// Проверяем, что получаем в результате все 3 евента у которых в составе названия есть подстрока. Независимо от регистра.
+    /// Проверяем, что получаем в результате все 3 события у которых в составе названия есть подстрока. Независимо от регистра.
     /// </summary>
     [Fact]
     public void GetEvents_WithTitleFilter_ReturnsMatchingEvents()
     {
         // Arrange
-        const int targetResult = 3;
+        SeedDatabase();
         var expectedIds = new[] { 4, 5, 6 };
 
-        var eventService = new EventService();
-        //todo будет сид данных в фейковый контекст для правильной проверки. Пока берем просто конкретные события из файла сервиса
-
         // Act
-        var getResult = eventService.GetEvents(title: "abc");
+        var getResult = _service.GetEvents(title: "abc");
 
         // Assert
         Assert.NotNull(getResult);
-        Assert.Equal(targetResult, getResult.Items.Count);
+        Assert.Equal(expectedIds.Length, getResult.Items.Count);
         Assert.Equal(expectedIds, getResult.Items.Select(e => e.Id));
     }
 
@@ -170,15 +256,13 @@ public class EventServiceTests
     public void GetEvents_WithDateRange_ReturnsEventsWithinRange()
     {
         // Arrange
+        SeedDatabase();
         var expectedIdsWithFromFilter = new[] { 5, 6, 7 };
         var expectedIdsWithToFilter = new[] { 1, 2, 3, 4, 5, 9 };
 
-        var eventService = new EventService();
-        //todo будет сид данных в фейковый контекст для правильной проверки. Пока берем просто конкретные события из файла сервиса
-
         // Act
-        var getResultWithFromFilter = eventService.GetEvents(from: new DateTime(2055, 1, 1));
-        var getResultWithToFilter = eventService.GetEvents(to: new DateTime(2030, 12, 31));
+        var getResultWithFromFilter = _service.GetEvents(from: new DateTime(2055, 1, 1));
+        var getResultWithToFilter = _service.GetEvents(to: new DateTime(2030, 12, 31));
 
         // Assert
         Assert.Equal(expectedIdsWithFromFilter, getResultWithFromFilter.Items.Select(e => e.Id));
@@ -193,8 +277,7 @@ public class EventServiceTests
     public void GetEvents_WithPagination_ReturnsCorrectPage()
     {
         // Arrange
-        var eventService = new EventService();
-
+        SeedDatabase();
         const int defaultPage = 1;
         const int targetPage = 3;
 
@@ -206,22 +289,21 @@ public class EventServiceTests
         var expectedIdsForPageAndPageSizeParameter = new[] { 5, 6 };
 
         // Act
-        var getDefaultEventsResult = eventService.GetEvents();
+        var getDefaultEventsResult = _service.GetEvents();
 
-        var getEventsResultWithPageParameter = eventService.GetEvents(page: targetPage);
+        var getEventsResultWithPageParameter = _service.GetEvents(page: targetPage);
         var getEventsResultWithPageAndPageSizeParameter =
-            eventService.GetEvents(page: targetPage, pageSize: targetPageSize);
-        var getEventsResultWithPageSizeParameter = eventService.GetEvents(pageSize: targetPageSize);
+            _service.GetEvents(page: targetPage, pageSize: targetPageSize);
+        var getEventsResultWithPageSizeParameter = _service.GetEvents(pageSize: targetPageSize);
 
         // Assert
-        // Проверяем, что по умолчанию получаем по 10 евентов на страницу
+        // Проверяем, что по умолчанию получаем по 10 событий на страницу
         Assert.Equal(defaultPage, getDefaultEventsResult.Page);
 
         // Проверяем, что на 1 странице всего 9 элементов при дефолтных параметрах пагинации
-        // todo вынужденная заглушка из-за отсутствия нормального dbcontext
-        Assert.Equal(defaultPageSize - 1, getDefaultEventsResult.PageSize);
+        Assert.Equal(9, getDefaultEventsResult.PageSize);
 
-        // Проверяем, что для дефолтных параметров пагинации мы получаем все существующие эвенты
+        // Проверяем, что для дефолтных параметров пагинации мы получаем все существующие события
         Assert.Equal(expectedIdsForDefaultParameters, getDefaultEventsResult.Items.Select(e => e.Id));
 
         // Проверяем, что если явно задаем страницу -- получаем ее
@@ -247,11 +329,11 @@ public class EventServiceTests
     public void GetEvents_WithMultipleFilters_ReturnsFilteredEvents()
     {
         // Arrange
-        var eventService = new EventService();
+        SeedDatabase();
         var expectedIds = new[] { 4, 5 };
 
         // Act
-        var getResult = eventService.GetEvents(
+        var getResult = _service.GetEvents(
             title: "abc",
             from: new DateTime(2025, 1, 1),
             to: new DateTime(2029, 1, 1)
@@ -269,12 +351,10 @@ public class EventServiceTests
     public void GetEventById_WithNonExistentId_ReturnNull()
     {
         // Arrange
-        var eventService = new EventService();
-
         const int wrongId = 100;
 
         // Act
-        var result = eventService.GetEventById(wrongId);
+        var result = _service.GetEventById(wrongId);
 
         // Assert
         Assert.Null(result);
@@ -288,8 +368,6 @@ public class EventServiceTests
     public void Update_WithNonExistentId_ThrowsNotFoundException()
     {
         // Arrange
-        var eventService = new EventService();
-
         const int wrongId = 100;
 
         var updateRequestData = new Event
@@ -301,7 +379,7 @@ public class EventServiceTests
         };
 
         // Act
-        var result = eventService.UpdateEvent(wrongId, updateRequestData);
+        var result = _service.UpdateEvent(wrongId, updateRequestData);
 
         // Assert
         Assert.Null(result);

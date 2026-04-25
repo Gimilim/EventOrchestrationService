@@ -5,7 +5,7 @@ namespace EventOrchestrationService;
 
 public interface IEventService
 {
-    PaginatedResult GetEvents(string? title, DateTime? from, DateTime? to, int page, int pageSize);
+    PaginatedResult GetEvents(string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 10);
     Event? GetEventById(int id);
     Event CreateEvent(Event newEvent);
     Event? UpdateEvent(int id, Event updatedEvent);
