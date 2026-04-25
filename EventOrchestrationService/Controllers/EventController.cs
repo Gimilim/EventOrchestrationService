@@ -41,7 +41,12 @@ public class EventController(IEventService eventService) : ControllerBase
 
         if (targetEvent == null)
         {
-            return NotFound($"Событие с ID {id} не найдено");
+            return NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Событие не найдено",
+                Detail = $"Событие с ID {id} не найдено"
+            });
         }
 
         return Ok(targetEvent);
@@ -83,7 +88,12 @@ public class EventController(IEventService eventService) : ControllerBase
 
         if (updatedEventResult == null)
         {
-            return NotFound($"Событие с ID {id} не найдено");
+            return NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Событие не найдено",
+                Detail = $"Событие с ID {id} не найдено"
+            });
         }
 
         return Ok(updatedEventResult);
@@ -99,6 +109,13 @@ public class EventController(IEventService eventService) : ControllerBase
     {
         var deleteResult = eventService.DeleteEvent(id);
 
-        return deleteResult ? NoContent() : NotFound($"Событие с ID {id} не найдено");
+        return deleteResult
+            ? NoContent()
+            : NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Событие не найдено",
+                Detail = $"Событие с ID {id} не найдено"
+            });
     }
 }
