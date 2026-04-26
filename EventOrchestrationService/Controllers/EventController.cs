@@ -1,4 +1,5 @@
-﻿using EventOrchestrationService.Models;
+﻿using EventOrchestrationService.Exceptions;
+using EventOrchestrationService.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventOrchestrationService.Controllers;
@@ -41,12 +42,7 @@ public class EventController(IEventService eventService) : ControllerBase
 
         if (targetEvent == null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Событие не найдено",
-                Detail = $"Событие с ID {id} не найдено"
-            });
+            throw new NotFoundException($"Событие с ID {id} не найдено");
         }
 
         return Ok(targetEvent);
@@ -60,13 +56,7 @@ public class EventController(IEventService eventService) : ControllerBase
     [HttpPost]
     public IActionResult Create([FromBody] Event newEvent)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
         var createdEvent = eventService.CreateEvent(newEvent);
-
         return CreatedAtAction(nameof(GetEventById), new { id = createdEvent.Id }, createdEvent);
     }
 
@@ -79,21 +69,11 @@ public class EventController(IEventService eventService) : ControllerBase
     [HttpPut("{id:int}")]
     public IActionResult Update(int id, [FromBody] Event updateEventRequest)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
         var updatedEventResult = eventService.UpdateEvent(id, updateEventRequest);
 
         if (updatedEventResult == null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Событие не найдено",
-                Detail = $"Событие с ID {id} не найдено"
-            });
+            throw new NotFoundException($"Событие с ID {id} не найдено");
         }
 
         return Ok(updatedEventResult);
@@ -109,13 +89,11 @@ public class EventController(IEventService eventService) : ControllerBase
     {
         var deleteResult = eventService.DeleteEvent(id);
 
-        return deleteResult
-            ? NoContent()
-            : NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Событие не найдено",
-                Detail = $"Событие с ID {id} не найдено"
-            });
+        if (!deleteResult)
+        {
+            throw new NotFoundException($"Событие с ID {id} не найдено");
+        }
+
+        return NoContent();
     }
 }

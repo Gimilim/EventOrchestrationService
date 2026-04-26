@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using FluentValidation;
+using EventOrchestrationService.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventOrchestrationService;
@@ -41,6 +42,7 @@ public class GlobalExceptionHandlingMiddleware(
         var error = new ProblemDetails
         {
             Status = statusCode,
+            Title = GetTitle(ex),
             Detail = ex.Message
         };
 
@@ -50,7 +52,18 @@ public class GlobalExceptionHandlingMiddleware(
     private static int MapStatusCode(Exception ex)
         => ex switch
         {
-            ValidationException ve => StatusCodes.Status400BadRequest,
+            NotFoundException => StatusCodes.Status404NotFound,
+            BadRequestException => StatusCodes.Status400BadRequest,
+            ValidationException => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status500InternalServerError
+        };
+    
+    private static string GetTitle(Exception ex)
+        => ex switch
+        {
+            NotFoundException => "Resource Not Found",
+            BadRequestException => "Bad Request",
+            ValidationException => "Validation Error",
+            _ => "Server Error"
         };
 }

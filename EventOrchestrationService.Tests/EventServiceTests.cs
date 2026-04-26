@@ -17,7 +17,7 @@ public class EventServiceTests : IDisposable
         _context = new AppDbContext(options);
         _context.Database.OpenConnection();
         _context.Database.EnsureCreated();
-        _service = new EventService(_context);
+        _service = new EventService(_context, new Event.EventValidator());
     }
 
     public void Dispose()

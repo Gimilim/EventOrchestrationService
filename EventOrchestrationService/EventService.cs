@@ -1,11 +1,21 @@
 using EventOrchestrationService.Data;
 using EventOrchestrationService.Models;
 using EventOrchestrationService.Models.DTO;
+using FluentValidation;
 
 namespace EventOrchestrationService;
 
-public class EventService(AppDbContext context) : IEventService
+public class EventService(AppDbContext context, IValidator<Event> validator) : IEventService
 {
+    private void Validate(Event eventToValidate)
+    {
+        var result = validator.Validate(eventToValidate);
+        if (!result.IsValid)
+        {
+            throw new ValidationException(result.Errors);
+        }
+    }
+
     public PaginatedResult GetEvents(string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 10)
     {
         IQueryable<Event> query = context.Events;
@@ -52,6 +62,8 @@ public class EventService(AppDbContext context) : IEventService
 
     public Event CreateEvent(Event newEvent)
     {
+        Validate(newEvent);
+
         context.Events.Add(newEvent);
 
         context.SaveChanges();
@@ -60,6 +72,8 @@ public class EventService(AppDbContext context) : IEventService
 
     public Event? UpdateEvent(int id, Event updatedEvent)
     {
+        Validate(updatedEvent);
+        
         var existingEvent = context.Events.FirstOrDefault(o => o.Id == id);
 
         if (existingEvent == null)
