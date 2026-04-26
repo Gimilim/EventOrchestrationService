@@ -52,3 +52,12 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+*.DotSettings.user
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+
+# JetBrains Rider
+.idea/

@@ -1,45 +1,80 @@
-﻿using EventOrchestrationService.Models;
+using EventOrchestrationService.Data;
+using EventOrchestrationService.Models;
+using EventOrchestrationService.Models.DTO;
+using FluentValidation;
 
 namespace EventOrchestrationService;
 
-public class EventService : IEventService
+public class EventService(AppDbContext context, IValidator<Event> validator) : IEventService
 {
-    // Имитация базы данных
-    private static List<Event> _events = new()
+    private void Validate(Event eventToValidate)
     {
-        new Event
+        var result = validator.Validate(eventToValidate);
+        if (!result.IsValid)
         {
-            Id = 1, Title = "Title1", Description = "Description1", StartAt = DateTime.Now.AddDays(-5),
-            EndAt = DateTime.Now
-        },
-        new Event
-        {
-            Id = 2, Title = "Title1", Description = "Description1", StartAt = DateTime.Now.AddDays(-5),
-            EndAt = DateTime.Now
-        },
-    };
+            throw new ValidationException(result.Errors);
+        }
+    }
 
-    public List<Event> GetAllEvents()
+    public PaginatedResult GetEvents(string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 10)
     {
-        return _events;
+        IQueryable<Event> query = context.Events;
+
+        if (!string.IsNullOrEmpty(title))
+        {
+            // todo временная мера. Не оптимально, но сейчас лучше не сделать
+            query = query
+                .Where(e => e.Title.ToLower().Contains(title.ToLower()));
+        }
+
+        if (from.HasValue)
+        {
+            query = query
+                .Where(e => e.StartAt >= from);
+        }
+
+        if (to.HasValue)
+        {
+            query = query
+                .Where(e => e.EndAt <= to);
+        }
+
+        var items = query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        var totalCount = query.Count();
+
+        return new PaginatedResult
+        {
+            TotalCount = totalCount,
+            Items = items,
+            Page = page,
+            PageSize = items.Count
+        };
     }
 
     public Event? GetEventById(int id)
     {
-        return _events.FirstOrDefault(o => o.Id == id);
+        return context.Events.FirstOrDefault(o => o.Id == id);
     }
 
     public Event CreateEvent(Event newEvent)
     {
-        newEvent.Id = _events.Any() ? _events.Max(o => o.Id) + 1 : 1;
-        _events.Add(newEvent);
+        Validate(newEvent);
 
+        context.Events.Add(newEvent);
+
+        context.SaveChanges();
         return newEvent;
     }
 
     public Event? UpdateEvent(int id, Event updatedEvent)
     {
-        var existingEvent = _events.FirstOrDefault(o => o.Id == id);
+        Validate(updatedEvent);
+        
+        var existingEvent = context.Events.FirstOrDefault(o => o.Id == id);
 
         if (existingEvent == null)
         {
@@ -51,18 +86,20 @@ public class EventService : IEventService
         existingEvent.StartAt = updatedEvent.StartAt;
         existingEvent.EndAt = updatedEvent.EndAt;
 
+        context.SaveChanges();
         return existingEvent;
     }
 
     public bool DeleteEvent(int id)
     {
-        var targetEvent = _events.FirstOrDefault(o => o.Id == id);
+        var targetEvent = context.Events.FirstOrDefault(o => o.Id == id);
         if (targetEvent == null)
         {
             return false;
         }
 
-        _events.Remove(targetEvent);
+        context.Events.Remove(targetEvent);
+        context.SaveChanges();
         return true;
     }
 }
