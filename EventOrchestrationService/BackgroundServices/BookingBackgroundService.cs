@@ -17,6 +17,10 @@ public class BookingBackgroundService(IBookingTaskQueue bookingQueue, IServiceSc
                 {
                     await ProcessBookingAsync(booking, cancellationToken);
                 }
+                else
+                {
+                    await Task.Delay(5000, cancellationToken);
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
