@@ -5,7 +5,7 @@ using FluentValidation;
 
 namespace EventOrchestrationService;
 
-public class EventService(AppDbContext context, IValidator<Event> validator) : IEventService
+public class EventService(AppDbContext dbContext, IValidator<Event> validator) : IEventService
 {
     private void Validate(Event eventToValidate)
     {
@@ -18,7 +18,7 @@ public class EventService(AppDbContext context, IValidator<Event> validator) : I
 
     public PaginatedResult GetEvents(string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 10)
     {
-        IQueryable<Event> query = context.Events;
+        IQueryable<Event> query = dbContext.Events;
 
         if (!string.IsNullOrEmpty(title))
         {
@@ -57,16 +57,16 @@ public class EventService(AppDbContext context, IValidator<Event> validator) : I
 
     public Event? GetEventById(int id)
     {
-        return context.Events.FirstOrDefault(o => o.Id == id);
+        return dbContext.Events.FirstOrDefault(o => o.Id == id);
     }
 
     public Event CreateEvent(Event newEvent)
     {
         Validate(newEvent);
 
-        context.Events.Add(newEvent);
+        dbContext.Events.Add(newEvent);
 
-        context.SaveChanges();
+        dbContext.SaveChanges();
         return newEvent;
     }
 
@@ -74,7 +74,7 @@ public class EventService(AppDbContext context, IValidator<Event> validator) : I
     {
         Validate(updatedEvent);
         
-        var existingEvent = context.Events.FirstOrDefault(o => o.Id == id);
+        var existingEvent = dbContext.Events.FirstOrDefault(o => o.Id == id);
 
         if (existingEvent == null)
         {
@@ -86,20 +86,20 @@ public class EventService(AppDbContext context, IValidator<Event> validator) : I
         existingEvent.StartAt = updatedEvent.StartAt;
         existingEvent.EndAt = updatedEvent.EndAt;
 
-        context.SaveChanges();
+        dbContext.SaveChanges();
         return existingEvent;
     }
 
     public bool DeleteEvent(int id)
     {
-        var targetEvent = context.Events.FirstOrDefault(o => o.Id == id);
+        var targetEvent = dbContext.Events.FirstOrDefault(o => o.Id == id);
         if (targetEvent == null)
         {
             return false;
         }
 
-        context.Events.Remove(targetEvent);
-        context.SaveChanges();
+        dbContext.Events.Remove(targetEvent);
+        dbContext.SaveChanges();
         return true;
     }
 }

@@ -1,13 +1,32 @@
 ﻿using EventOrchestrationService.Exceptions;
 using EventOrchestrationService.Models;
+using EventOrchestrationService.Queues;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventOrchestrationService.Controllers;
 
 [ApiController]
 [Route("events")]
-public class EventController(IEventService eventService) : ControllerBase
+public class EventController(IEventService eventService, IBookingService bookingService, IBookingTaskQueue taskQueue)
+    : ControllerBase
 {
+    /// <summary>
+    /// Создание бронирования.
+    /// </summary>
+    /// <param name="id">ID события.</param>
+    /// <param name="сancellationToken">Токен отмены.</param>
+    /// <returns>Информацию о созданном бронировании.</returns>
+    [HttpPost("{id:int}/book")]
+    public async Task<IActionResult> CreateBooking(int id, CancellationToken сancellationToken)
+    {
+        var booking = await bookingService.CreateBookingAsync(id, сancellationToken);
+
+        taskQueue.Enqueue(booking);
+
+        Response.Headers.Location = $"/bookings/{booking.Id}";
+        return Accepted(new { booking.Id, booking.Status, booking.EventId });
+    }
+
     /// <summary>
     /// Получить список всех событий.
     /// </summary>
