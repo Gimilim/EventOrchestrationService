@@ -73,7 +73,7 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
     public Event? UpdateEvent(int id, Event updatedEvent)
     {
         Validate(updatedEvent);
-        
+
         var existingEvent = dbContext.Events.FirstOrDefault(o => o.Id == id);
 
         if (existingEvent == null)

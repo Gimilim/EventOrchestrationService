@@ -9,15 +9,36 @@ public class Event
     public int Id { get; set; }
 
     [Required(ErrorMessage = "Название события обязательно для заполнения")]
-    public string Title { get; set; }
+    public required string Title { get; set; }
 
-    public string Description { get; set; }
+    public string? Description { get; set; }
 
     [Required(ErrorMessage = "Дата начала события обязательно для заполнения")]
-    public DateTime StartAt { get; set; }
+    public required DateTime StartAt { get; set; }
 
     [Required(ErrorMessage = "Дата окончания события обязательно для заполнения")]
-    public DateTime EndAt { get; set; }
+    public required DateTime EndAt { get; set; }
+
+    [Required(ErrorMessage = "Общее количество мест на событие обязательно для заполнения")]
+    public required int TotalSeats { get; set; }
+
+    public int AvailableSeats { get; set; }
+
+    public bool TryReserveSeats (int count = 1)
+    {
+        if (AvailableSeats >= count)
+        {
+            AvailableSeats -= count;
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool ReleaseSeats(int count = 1)
+    {
+        return false;
+    }
 
     public class EventValidator : AbstractValidator<Event>
     {
@@ -26,7 +47,10 @@ public class Event
             RuleFor(x => x.EndAt)
                 .GreaterThan(x => x.StartAt)
                 .WithMessage("Дата окончания должна быть больше даты начала");
+
+            RuleFor(x => x.TotalSeats)
+                .GreaterThan(0)
+                .WithMessage("Общее количество мест должно быть больше нуля");
         }
     }
-
 }

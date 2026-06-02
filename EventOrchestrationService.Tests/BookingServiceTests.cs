@@ -33,12 +33,12 @@ public class BookingServiceTests : IDisposable
             new Event
             {
                 Id = 1, Title = "Title1", Description = "Description1", StartAt = DateTime.UtcNow.AddDays(-5),
-                EndAt = DateTime.UtcNow.AddDays(5)
+                EndAt = DateTime.UtcNow.AddDays(5), TotalSeats = 10
             },
             new Event
             {
                 Id = 2, Title = "Title2", Description = "Description2", StartAt = DateTime.UtcNow.AddDays(-5),
-                EndAt = DateTime.UtcNow.AddDays(5)
+                EndAt = DateTime.UtcNow.AddDays(5), TotalSeats = 10
             }
         );
         _context.SaveChanges();

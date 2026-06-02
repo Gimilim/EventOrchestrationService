@@ -32,47 +32,47 @@ public class EventServiceTests : IDisposable
             new Event
             {
                 Id = 1, Title = "Title1", Description = "Description1", StartAt = DateTime.Now.AddDays(-5),
-                EndAt = DateTime.Now.AddDays(3)
+                EndAt = DateTime.Now.AddDays(3), TotalSeats = 10
             },
             new Event
             {
                 Id = 2, Title = "Title2", Description = "Description2", StartAt = new DateTime(2025, 1, 30),
-                EndAt = new DateTime(2025, 12, 30)
+                EndAt = new DateTime(2025, 12, 30), TotalSeats = 10
             },
             new Event
             {
                 Id = 3, Title = "Title3", Description = "Description3", StartAt = DateTime.Now.AddDays(-8),
-                EndAt = DateTime.Now.AddDays(5)
+                EndAt = DateTime.Now.AddDays(5), TotalSeats = 10
             },
             new Event
             {
                 Id = 4, Title = "ABC_Title4", Description = "Description4", StartAt = DateTime.Now.AddDays(-8),
-                EndAt = DateTime.Now.AddDays(5)
+                EndAt = DateTime.Now.AddDays(5), TotalSeats = 10
             },
             new Event
             {
                 Id = 5, Title = "abc_Title5", Description = "Description5", StartAt = new DateTime(2055, 1, 30),
-                EndAt = DateTime.Now.AddDays(5)
+                EndAt = DateTime.Now.AddDays(5), TotalSeats = 10
             },
             new Event
             {
                 Id = 6, Title = "AbC_Title6", Description = "Description6", StartAt = new DateTime(2055, 1, 30),
-                EndAt = new DateTime(2077, 12, 30)
+                EndAt = new DateTime(2077, 12, 30), TotalSeats = 10
             },
             new Event
             {
                 Id = 7, Title = "Title7", Description = "Description7", StartAt = new DateTime(2055, 1, 30),
-                EndAt = new DateTime(2077, 12, 30)
+                EndAt = new DateTime(2077, 12, 30), TotalSeats = 10
             },
             new Event
             {
                 Id = 8, Title = "Title8", Description = "Description8", StartAt = new DateTime(2025, 1, 30),
-                EndAt = new DateTime(2077, 12, 30)
+                EndAt = new DateTime(2077, 12, 30), TotalSeats = 10
             },
             new Event
             {
                 Id = 9, Title = "Title9", Description = "Description9", StartAt = new DateTime(2027, 1, 30),
-                EndAt = new DateTime(2027, 12, 30)
+                EndAt = new DateTime(2027, 12, 30), TotalSeats = 10
             }
         );
         _context.SaveChanges();
@@ -92,7 +92,8 @@ public class EventServiceTests : IDisposable
             Title = "testTitle1",
             Description = "testDescription1",
             StartAt = new DateTime(2099, 12, 30),
-            EndAt = new DateTime(2100, 12, 30)
+            EndAt = new DateTime(2100, 12, 30),
+            TotalSeats = 10
         };
 
         // Act
@@ -145,7 +146,8 @@ public class EventServiceTests : IDisposable
             Title = "testTitle1",
             Description = "testDescription1",
             StartAt = new DateTime(2099, 12, 30),
-            EndAt = new DateTime(2100, 12, 30)
+            EndAt = new DateTime(2100, 12, 30),
+            TotalSeats = 10
         };
 
         var created = _service.CreateEvent(validEventToAdd);
@@ -175,7 +177,8 @@ public class EventServiceTests : IDisposable
             Title = "testTitle1",
             Description = "testDescription1",
             StartAt = new DateTime(2099, 12, 30),
-            EndAt = new DateTime(2100, 12, 30)
+            EndAt = new DateTime(2100, 12, 30),
+            TotalSeats = 10
         };
 
         var created = _service.CreateEvent(validEventToAdd);
@@ -185,7 +188,8 @@ public class EventServiceTests : IDisposable
             Title = "updatedTitle2",
             Description = "updatedDescription2",
             StartAt = new DateTime(2029, 1, 30),
-            EndAt = new DateTime(2029, 12, 30)
+            EndAt = new DateTime(2029, 12, 30),
+            TotalSeats = 10
         };
 
         // Act
@@ -212,7 +216,8 @@ public class EventServiceTests : IDisposable
             Title = "testTitle1",
             Description = "testDescription1",
             StartAt = new DateTime(2099, 12, 30),
-            EndAt = new DateTime(2100, 12, 30)
+            EndAt = new DateTime(2100, 12, 30),
+            TotalSeats = 10
         };
 
         var created = _service.CreateEvent(validEventToAdd);
@@ -375,7 +380,8 @@ public class EventServiceTests : IDisposable
             Title = "updatedTitle2",
             Description = "updatedDescription2",
             StartAt = new DateTime(2029, 1, 30),
-            EndAt = new DateTime(2029, 12, 30)
+            EndAt = new DateTime(2029, 12, 30),
+            TotalSeats = 10
         };
 
         // Act
