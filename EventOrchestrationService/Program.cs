@@ -1,18 +1,22 @@
-using FluentValidation.AspNetCore;
 using EventOrchestrationService;
+using EventOrchestrationService.BackgroundServices;
 using EventOrchestrationService.Data;
 using EventOrchestrationService.Models;
+using EventOrchestrationService.Queues;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<IEventService, EventService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddControllers();
+builder.Services.AddSingleton<IBookingTaskQueue, BookingTaskQueue>();
+builder.Services.AddHostedService<BookingBackgroundService>();
 builder.Services.AddValidatorsFromAssemblyContaining<Event.EventValidator>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
