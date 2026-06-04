@@ -80,11 +80,11 @@ public class EventServiceTests : IDisposable
 
     /// <summary>
     /// Создание события с валидными данными
-    /// Проверяем, что событию присваивается новый ИД todo будет переделано с введением dbcontext
+    /// Проверяем, что событию присваивается новый ИД
     /// Проверяем, что каждое из полей события записано
     /// </summary>
     [Fact]
-    public void CreateEvent_WithValidData_Success()
+    public async void CreateEventAsync_WithValidData_Success()
     {
         // Arrange
         var validEventToAdd = new Event
@@ -93,17 +93,41 @@ public class EventServiceTests : IDisposable
             Description = "testDescription1",
             StartAt = new DateTime(2099, 12, 30),
             EndAt = new DateTime(2100, 12, 30),
-            TotalSeats = 10
+            TotalSeats = 10,
         };
 
         // Act
-        var result = _service.CreateEvent(validEventToAdd);
+        var result = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
 
         // Assert
         Assert.Equal(validEventToAdd.Title, result.Title);
         Assert.Equal(validEventToAdd.Description, result.Description);
         Assert.Equal(validEventToAdd.StartAt, result.StartAt);
         Assert.Equal(validEventToAdd.EndAt, result.EndAt);
+    }
+
+    /// <summary>
+    /// Создание события с TotalSeats меньше или равно 0
+    /// Проверяем, что будет выброшена ошибка валидации
+    /// </summary>
+    [Fact]
+    public async void CreateEventAsync_WithInvalidTotalSeats_ThrowsValidationException()
+    {
+        // Arrange
+        var invalidEventToAdd = new Event
+        {
+            Title = "testTitle1",
+            Description = "testDescription1",
+            StartAt = new DateTime(2099, 12, 30),
+            EndAt = new DateTime(2100, 12, 30),
+            TotalSeats = -10,
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<FluentValidation.ValidationException>(async () =>
+        {
+            await _service.CreateEventAsync(invalidEventToAdd, CancellationToken.None);
+        });
     }
 
     /// <summary>
@@ -138,7 +162,7 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что при запросе конкретного собятия получаем именно его
     /// </summary>
     [Fact]
-    public void GetEventById_WithValidId_ReturnsEvent()
+    public async void GetEventById_WithValidId_ReturnsEvent()
     {
         // Arrange
         var validEventToAdd = new Event
@@ -150,7 +174,7 @@ public class EventServiceTests : IDisposable
             TotalSeats = 10
         };
 
-        var created = _service.CreateEvent(validEventToAdd);
+        var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
 
         // Act
         var result = _service.GetEventById(validEventToAdd.Id);
@@ -169,7 +193,7 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что при обновлении события каждое его поля корректно перезаписывается
     /// </summary>
     [Fact]
-    public void Update_WithValidData_ReturnsUpdatedEvent()
+    public async void Update_WithValidData_ReturnsUpdatedEvent()
     {
         // Arrange
         var validEventToAdd = new Event
@@ -181,7 +205,7 @@ public class EventServiceTests : IDisposable
             TotalSeats = 10
         };
 
-        var created = _service.CreateEvent(validEventToAdd);
+        var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
 
         var updateRequestData = new Event
         {
@@ -209,7 +233,7 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что событие успешно удаляется
     /// </summary>
     [Fact]
-    public void Delete_WithValidId_DeleteSuccess()
+    public async void Delete_WithValidId_DeleteSuccess()
     {
         var validEventToAdd = new Event
         {
@@ -220,7 +244,7 @@ public class EventServiceTests : IDisposable
             TotalSeats = 10
         };
 
-        var created = _service.CreateEvent(validEventToAdd);
+        var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
 
         // Act
         var getEventBeforeDelete = _service.GetEventById(created.Id);

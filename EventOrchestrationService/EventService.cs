@@ -60,13 +60,14 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
         return dbContext.Events.FirstOrDefault(o => o.Id == id);
     }
 
-    public Event CreateEvent(Event newEvent)
+    public async Task<Event> CreateEventAsync(Event newEvent, CancellationToken cancellationToken)
     {
+        newEvent.AvailableSeats = newEvent.TotalSeats;
         Validate(newEvent);
 
-        dbContext.Events.Add(newEvent);
+        await dbContext.Events.AddAsync(newEvent, cancellationToken);
 
-        dbContext.SaveChanges();
+        await dbContext.SaveChangesAsync(cancellationToken);
         return newEvent;
     }
 

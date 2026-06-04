@@ -7,7 +7,7 @@ public interface IEventService
 {
     PaginatedResult GetEvents(string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 10);
     Event? GetEventById(int id);
-    Event CreateEvent(Event newEvent);
+    Task<Event> CreateEventAsync(Event newEvent, CancellationToken cancellationToken);
     Event? UpdateEvent(int id, Event updatedEvent);
     bool DeleteEvent(int id);
 }
