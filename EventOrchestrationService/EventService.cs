@@ -1,7 +1,9 @@
 using EventOrchestrationService.Data;
+using EventOrchestrationService.Exceptions;
 using EventOrchestrationService.Models;
 using EventOrchestrationService.Models.DTO;
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 
 namespace EventOrchestrationService;
 
@@ -55,9 +57,20 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
         };
     }
 
+    // todo уберу на следующем рефакторе, оставлю только async метод 
     public Event? GetEventById(int id)
     {
         return dbContext.Events.FirstOrDefault(o => o.Id == id);
+    }
+
+    public async Task<Event?> GetEventByIdAsync(int id, CancellationToken cancellationToken)
+    {
+        var result = await dbContext.Events.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+
+        if (result == null)
+            throw new NotFoundException($"Событие с ID {id} не найдено");
+
+        return result;
     }
 
     public async Task<Event> CreateEventAsync(Event newEvent, CancellationToken cancellationToken)
