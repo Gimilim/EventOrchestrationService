@@ -162,7 +162,7 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что при запросе конкретного события получаем именно его
     /// </summary>
     [Fact]
-    public async void GetEventById_WithValidId_ReturnsEvent()
+    public async Task GetEventById_WithValidId_ReturnsEvent()
     {
         // Arrange
         var validEventToAdd = new Event
@@ -193,7 +193,7 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что при обновлении события каждое его поля корректно перезаписывается
     /// </summary>
     [Fact]
-    public async void Update_WithValidData_ReturnsUpdatedEvent()
+    public async Task Update_WithValidData_ReturnsUpdatedEvent()
     {
         // Arrange
         var validEventToAdd = new Event
@@ -233,7 +233,7 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что событие успешно удаляется
     /// </summary>
     [Fact]
-    public async void Delete_WithValidId_DeleteSuccess()
+    public async Task Delete_WithValidId_DeleteSuccess()
     {
         var validEventToAdd = new Event
         {
