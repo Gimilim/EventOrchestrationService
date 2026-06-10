@@ -21,42 +21,42 @@ public static class DbInitializer
             new()
             {
                 Id = 2, Title = "Title2", Description = "Description2", StartAt = new DateTime(2025, 1, 30),
-                EndAt = new DateTime(2025, 12, 30), TotalSeats = 10
+                EndAt = new DateTime(2025, 12, 30), TotalSeats = 10, AvailableSeats = 10
             },
             new()
             {
                 Id = 3, Title = "Title3", Description = "Description3", StartAt = DateTime.Now.AddDays(-8),
-                EndAt = DateTime.Now.AddDays(5), TotalSeats = 10
+                EndAt = DateTime.Now.AddDays(5), TotalSeats = 10, AvailableSeats = 10
             },
             new()
             {
                 Id = 4, Title = "ABC_Title4", Description = "Description4", StartAt = DateTime.Now.AddDays(-8),
-                EndAt = DateTime.Now.AddDays(5), TotalSeats = 10
+                EndAt = DateTime.Now.AddDays(5), TotalSeats = 10, AvailableSeats = 10
             },
             new()
             {
                 Id = 5, Title = "abc_Title5", Description = "Description5", StartAt = new DateTime(2055, 1, 30),
-                EndAt = DateTime.Now.AddDays(5), TotalSeats = 10
+                EndAt = DateTime.Now.AddDays(5), TotalSeats = 10, AvailableSeats = 10
             },
             new()
             {
                 Id = 6, Title = "AbC_Title6", Description = "Description6", StartAt = new DateTime(2055, 1, 30),
-                EndAt = new DateTime(2077, 12, 30), TotalSeats = 10
+                EndAt = new DateTime(2077, 12, 30), TotalSeats = 10, AvailableSeats = 10
             },
             new()
             {
                 Id = 7, Title = "Title7", Description = "Description7", StartAt = new DateTime(2055, 1, 30),
-                EndAt = new DateTime(2077, 12, 30), TotalSeats = 10
+                EndAt = new DateTime(2077, 12, 30), TotalSeats = 10, AvailableSeats = 10
             },
             new()
             {
                 Id = 8, Title = "Title8", Description = "Description8", StartAt = new DateTime(2025, 1, 30),
-                EndAt = new DateTime(2077, 12, 30), TotalSeats = 10
+                EndAt = new DateTime(2077, 12, 30), TotalSeats = 10, AvailableSeats = 10
             },
             new()
             {
                 Id = 9, Title = "Title9", Description = "Description9", StartAt = new DateTime(2027, 1, 30),
-                EndAt = new DateTime(2027, 12, 30), TotalSeats = 10
+                EndAt = new DateTime(2027, 12, 30), TotalSeats = 10, AvailableSeats = 10
             },
         };
 
