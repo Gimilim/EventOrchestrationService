@@ -84,7 +84,7 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что каждое из полей события записано
     /// </summary>
     [Fact]
-    public async void CreateEventAsync_WithValidData_Success()
+    public async Task CreateEventAsync_WithValidData_Success()
     {
         // Arrange
         var validEventToAdd = new Event
@@ -111,7 +111,7 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что будет выброшена ошибка валидации
     /// </summary>
     [Fact]
-    public async void CreateEventAsync_WithInvalidTotalSeats_ThrowsValidationException()
+    public async Task CreateEventAsync_WithInvalidTotalSeats_ThrowsValidationException()
     {
         // Arrange
         var invalidEventToAdd = new Event
@@ -159,7 +159,7 @@ public class EventServiceTests : IDisposable
 
     /// <summary>
     /// Получение события по id
-    /// Проверяем, что при запросе конкретного собятия получаем именно его
+    /// Проверяем, что при запросе конкретного события получаем именно его
     /// </summary>
     [Fact]
     public async void GetEventById_WithValidId_ReturnsEvent()
@@ -177,7 +177,7 @@ public class EventServiceTests : IDisposable
         var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
 
         // Act
-        var result = _service.GetEventById(validEventToAdd.Id);
+        var result = _service.GetEventById(created.Id);
 
         // Assert
         Assert.NotNull(result);
@@ -394,7 +394,7 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что получаем null в ответ
     /// </summary>
     [Fact]
-    public void Update_WithNonExistentId_ThrowsNotFoundException()
+    public void Update_WithNonExistentId_ReturnsNull()
     {
         // Arrange
         const int wrongId = 100;
@@ -413,5 +413,74 @@ public class EventServiceTests : IDisposable
 
         // Assert
         Assert.Null(result);
+    }
+
+    /// <summary>
+    /// Обновление события по его id
+    /// Проверяем, что при обновлении события каждое его поля корректно перезаписывается
+    /// </summary>
+    [Fact]
+    public async Task UpdateEventAsync_WithValidData_ReturnsUpdatedEvent()
+    {
+        // Arrange
+        var validEventToAdd = new Event
+        {
+            Title = "testTitle1",
+            Description = "testDescription1",
+            StartAt = new DateTime(2099, 12, 30),
+            EndAt = new DateTime(2100, 12, 30),
+            TotalSeats = 10
+        };
+
+        var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
+
+        var updateRequestData = new Event
+        {
+            Title = "updatedTitle2",
+            Description = "updatedDescription2",
+            StartAt = new DateTime(2029, 1, 30),
+            EndAt = new DateTime(2029, 12, 30),
+            TotalSeats = 20,
+            AvailableSeats = 20
+        };
+
+        // Act
+        var updateResult = await _service.UpdateEventAsync(created.Id, updateRequestData, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(updateResult);
+        Assert.Equal(updateRequestData.Title, updateResult.Title);
+        Assert.Equal(updateRequestData.Description, updateResult.Description);
+        Assert.Equal(updateRequestData.StartAt, updateResult.StartAt);
+        Assert.Equal(updateRequestData.EndAt, updateResult.EndAt);
+        Assert.Equal(updateRequestData.TotalSeats, updateResult.TotalSeats);
+        Assert.Equal(updateRequestData.AvailableSeats, updateResult.AvailableSeats);
+    }
+
+    /// <summary>
+    /// Получение события по id
+    /// Проверяем, что при запросе конкретного события получаем именно его
+    /// </summary>
+    [Fact]
+    public async Task GetEventByIdAsync_WithValidId_ReturnsEvent()
+    {
+        // Arrange
+        var validEventToAdd = new Event
+        {
+            Title = "testTitle1",
+            Description = "testDescription1",
+            StartAt = new DateTime(2099, 12, 30),
+            EndAt = new DateTime(2100, 12, 30),
+            TotalSeats = 10
+        };
+
+        var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
+
+        // Act
+        var result = await _service.GetEventByIdAsync(created.Id, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(created.Id, result.Id);
     }
 }
