@@ -18,7 +18,8 @@ public class BookingServiceTests : IDisposable
         _context = new AppDbContext(options);
         _context.Database.OpenConnection();
         _context.Database.EnsureCreated();
-        _service = new BookingService(_context);
+        var eventService = new EventService(_context, new Event.EventValidator());
+        _service = new BookingService(_context, eventService);
     }
 
     public void Dispose()

@@ -65,12 +65,7 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
 
     public async Task<Event?> GetEventByIdAsync(int id, CancellationToken cancellationToken)
     {
-        var result = await dbContext.Events.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
-
-        if (result == null)
-            throw new NotFoundException($"Событие с ID {id} не найдено");
-
-        return result;
+        return await dbContext.Events.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
     }
 
     public async Task<Event> CreateEventAsync(Event newEvent, CancellationToken cancellationToken)
@@ -84,6 +79,7 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
         return newEvent;
     }
 
+    // todo уберу на следующем рефакторе, оставлю только async метод 
     public Event? UpdateEvent(int id, Event updatedEvent)
     {
         Validate(updatedEvent);
@@ -101,6 +97,28 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
         existingEvent.EndAt = updatedEvent.EndAt;
 
         dbContext.SaveChanges();
+        return existingEvent;
+    }
+
+    public async Task<Event?> UpdateEventAsync(int id, Event updatedEvent, CancellationToken cancellationToken)
+    {
+        Validate(updatedEvent);
+
+        var existingEvent = await dbContext.Events.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+
+        if (existingEvent == null)
+        {
+            return null;
+        }
+
+        existingEvent.Title = updatedEvent.Title;
+        existingEvent.Description = updatedEvent.Description;
+        existingEvent.StartAt = updatedEvent.StartAt;
+        existingEvent.EndAt = updatedEvent.EndAt;
+        existingEvent.TotalSeats = updatedEvent.TotalSeats;
+        existingEvent.AvailableSeats = updatedEvent.AvailableSeats;
+
+        await dbContext.SaveChangesAsync(cancellationToken);
         return existingEvent;
     }
 

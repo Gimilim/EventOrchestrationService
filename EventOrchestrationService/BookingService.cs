@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventOrchestrationService;
 
-public class BookingService(AppDbContext dbContext, EventService eventService) : IBookingService
+public class BookingService(AppDbContext dbContext, IEventService eventService) : IBookingService
 {
     private readonly SemaphoreSlim _bookingLock = new(1, 1);
 
@@ -16,6 +16,9 @@ public class BookingService(AppDbContext dbContext, EventService eventService) :
         try
         {
             var targetEvent = await eventService.GetEventByIdAsync(eventId, cancellationToken);
+
+            if (targetEvent == null)
+                throw new NotFoundException($"Событие с ID {eventId} не найдено");
 
             if (!targetEvent.TryReserveSeats())
                 throw new NoAvailableSeatsException($"На событие с ID {eventId} нет свободных мест");
@@ -40,8 +43,7 @@ public class BookingService(AppDbContext dbContext, EventService eventService) :
 
     public async Task<Booking?> GetBookingByIdAsync(int bookingId, CancellationToken cancellationToken)
     {
-        return (await dbContext.Bookings
-            .AsNoTracking()
-            .FirstOrDefaultAsync(b => b.Id == bookingId, cancellationToken));
+        return await dbContext.Bookings
+            .FirstOrDefaultAsync(b => b.Id == bookingId, cancellationToken);
     }
 }

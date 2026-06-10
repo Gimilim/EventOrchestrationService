@@ -1,13 +1,12 @@
 ﻿using EventOrchestrationService.Exceptions;
 using EventOrchestrationService.Models;
-using EventOrchestrationService.Queues;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventOrchestrationService.Controllers;
 
 [ApiController]
 [Route("events")]
-public class EventController(IEventService eventService, IBookingService bookingService, IBookingTaskQueue taskQueue)
+public class EventController(IEventService eventService, IBookingService bookingService)
     : ControllerBase
 {
     /// <summary>
@@ -20,8 +19,6 @@ public class EventController(IEventService eventService, IBookingService booking
     public async Task<IActionResult> CreateBooking(int id, CancellationToken cancellationToken)
     {
         var booking = await bookingService.CreateBookingAsync(id, cancellationToken);
-
-        taskQueue.Enqueue(booking);
 
         Response.Headers.Location = $"/bookings/{booking.Id}";
         return Accepted(new { booking.Id, booking.Status, booking.EventId });

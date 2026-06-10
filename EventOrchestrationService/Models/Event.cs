@@ -5,6 +5,8 @@ namespace EventOrchestrationService.Models;
 
 public class Event
 {
+    private readonly object _seatsLock = new();
+
     [Required(ErrorMessage = "ИД события обязателен для заполнения")]
     public int Id { get; set; }
 
@@ -24,20 +26,33 @@ public class Event
 
     public int AvailableSeats { get; set; }
 
-    public bool TryReserveSeats (int count = 1)
+    public bool TryReserveSeats(int count = 1)
     {
-        if (AvailableSeats >= count)
+        lock (_seatsLock)
         {
-            AvailableSeats -= count;
-            return true;
-        }
+            if (AvailableSeats >= count)
+            {
+                AvailableSeats -= count;
+                return true;
+            }
 
-        return false;
+            return false;
+        }
     }
 
     public bool ReleaseSeats(int count = 1)
     {
-        return false;
+        lock (_seatsLock)
+        {
+            if (count <= 0) return false;
+
+            var newAvailable = AvailableSeats + count;
+            if (newAvailable > TotalSeats)
+                newAvailable = TotalSeats;
+
+            AvailableSeats = newAvailable;
+            return true;
+        }
     }
 
     public class EventValidator : AbstractValidator<Event>
