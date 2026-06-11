@@ -1,27 +1,24 @@
 ﻿using EventOrchestrationService.Exceptions;
 using EventOrchestrationService.Models;
-using EventOrchestrationService.Queues;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventOrchestrationService.Controllers;
 
 [ApiController]
 [Route("events")]
-public class EventController(IEventService eventService, IBookingService bookingService, IBookingTaskQueue taskQueue)
+public class EventController(IEventService eventService, IBookingService bookingService)
     : ControllerBase
 {
     /// <summary>
     /// Создание бронирования.
     /// </summary>
     /// <param name="id">ID события.</param>
-    /// <param name="сancellationToken">Токен отмены.</param>
+    /// <param name="cancellationToken">Токен отмены.</param>
     /// <returns>Информацию о созданном бронировании.</returns>
     [HttpPost("{id:int}/book")]
-    public async Task<IActionResult> CreateBooking(int id, CancellationToken сancellationToken)
+    public async Task<IActionResult> CreateBooking(int id, CancellationToken cancellationToken)
     {
-        var booking = await bookingService.CreateBookingAsync(id, сancellationToken);
-
-        taskQueue.Enqueue(booking);
+        var booking = await bookingService.CreateBookingAsync(id, cancellationToken);
 
         Response.Headers.Location = $"/bookings/{booking.Id}";
         return Accepted(new { booking.Id, booking.Status, booking.EventId });
@@ -71,11 +68,12 @@ public class EventController(IEventService eventService, IBookingService booking
     /// Создать новое событие.
     /// </summary>
     /// <param name="newEvent">Данные события.</param>
+    /// <param name="cancellationToken">Токен отмены.</param>
     /// <returns>Созданное событие.</returns>
     [HttpPost]
-    public IActionResult Create([FromBody] Event newEvent)
+    public async Task <IActionResult> Create([FromBody] Event newEvent, CancellationToken cancellationToken)
     {
-        var createdEvent = eventService.CreateEvent(newEvent);
+        var createdEvent = await eventService.CreateEventAsync(newEvent, cancellationToken);
         return CreatedAtAction(nameof(GetEventById), new { id = createdEvent.Id }, createdEvent);
     }
 

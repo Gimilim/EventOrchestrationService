@@ -55,6 +55,7 @@ public class GlobalExceptionHandlingMiddleware(
             NotFoundException => StatusCodes.Status404NotFound,
             BadRequestException => StatusCodes.Status400BadRequest,
             ValidationException => StatusCodes.Status400BadRequest,
+            NoAvailableSeatsException => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status500InternalServerError
         };
     
@@ -64,6 +65,7 @@ public class GlobalExceptionHandlingMiddleware(
             NotFoundException => "Resource Not Found",
             BadRequestException => "Bad Request",
             ValidationException => "Validation Error",
+            NoAvailableSeatsException => "No available seats for this even",
             _ => "Server Error"
         };
 }

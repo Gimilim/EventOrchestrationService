@@ -2,7 +2,6 @@ using EventOrchestrationService;
 using EventOrchestrationService.BackgroundServices;
 using EventOrchestrationService.Data;
 using EventOrchestrationService.Models;
-using EventOrchestrationService.Queues;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,7 +14,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddControllers();
-builder.Services.AddSingleton<IBookingTaskQueue, BookingTaskQueue>();
 builder.Services.AddHostedService<BookingBackgroundService>();
 builder.Services.AddValidatorsFromAssemblyContaining<Event.EventValidator>();
 builder.Services.AddEndpointsApiExplorer();

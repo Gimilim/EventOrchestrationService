@@ -10,7 +10,7 @@ public class PaginatedResult
     /// <summary>
     /// Массив самих событий
     /// </summary>
-    public List<Event> Items { get; set; }
+    public List<Event>? Items { get; set; }
 
     /// <summary>
     /// Номер текущей страницы
