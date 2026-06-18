@@ -248,7 +248,7 @@ public class EventServiceTests : IDisposable
 
         // Act
         var getEventBeforeDelete = await _service.GetEventByIdAsync(created.Id, CancellationToken.None);
-        var deleteResult = _service.DeleteEvent(created.Id);
+        var deleteResult = await _service.DeleteEventAsync(created.Id, CancellationToken.None);
         var getEventAfterDeleting = await _service.GetEventByIdAsync(created.Id, CancellationToken.None);
 
         // Assert

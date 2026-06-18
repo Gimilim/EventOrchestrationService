@@ -101,11 +101,12 @@ public class EventController(IEventService eventService, IBookingService booking
     /// Удалить событие.
     /// </summary>
     /// <param name="id">ID события.</param>
+    /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Статус удаления.</returns>
     [HttpDelete("{id:int}")]
-    public IActionResult Delete(int id)
+    public async Task <IActionResult>  Delete(int id, CancellationToken cancellationToken)
     {
-        var deleteResult = eventService.DeleteEvent(id);
+        var deleteResult = await eventService.DeleteEventAsync(id, cancellationToken);
 
         if (!deleteResult)
         {

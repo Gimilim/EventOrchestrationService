@@ -10,5 +10,5 @@ public interface IEventService
     Task<Event> CreateEventAsync(Event newEvent, CancellationToken cancellationToken);
     Event? UpdateEvent(int id, Event updatedEvent);
     Task<Event?> UpdateEventAsync(int id, Event updatedEvent, CancellationToken cancellationToken);
-    bool DeleteEvent(int id);
+    Task<bool> DeleteEventAsync(int id, CancellationToken cancellationToken);
 }

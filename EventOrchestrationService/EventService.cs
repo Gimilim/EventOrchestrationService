@@ -117,16 +117,16 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
         return existingEvent;
     }
 
-    public bool DeleteEvent(int id)
+    public async Task<bool> DeleteEventAsync(int id, CancellationToken cancellationToken)
     {
-        var targetEvent = dbContext.Events.FirstOrDefault(o => o.Id == id);
+        var targetEvent = await dbContext.Events.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
         if (targetEvent == null)
         {
             return false;
         }
 
         dbContext.Events.Remove(targetEvent);
-        dbContext.SaveChanges();
+        await dbContext.SaveChangesAsync(cancellationToken);
         return true;
     }
 }
