@@ -177,7 +177,7 @@ public class EventServiceTests : IDisposable
         var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
 
         // Act
-        var result = _service.GetEventById(created.Id);
+        var result = await _service.GetEventByIdAsync(created.Id, CancellationToken.None);
 
         // Assert
         Assert.NotNull(result);
@@ -247,9 +247,9 @@ public class EventServiceTests : IDisposable
         var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
 
         // Act
-        var getEventBeforeDelete = _service.GetEventById(created.Id);
+        var getEventBeforeDelete = await _service.GetEventByIdAsync(created.Id, CancellationToken.None);
         var deleteResult = _service.DeleteEvent(created.Id);
-        var getEventAfterDeleting = _service.GetEventById(created.Id);
+        var getEventAfterDeleting = await _service.GetEventByIdAsync(created.Id, CancellationToken.None);
 
         // Assert
         Assert.NotNull(getEventBeforeDelete);
@@ -377,13 +377,13 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что получаем null в ответ
     /// </summary>
     [Fact]
-    public void GetEventById_WithNonExistentId_ReturnNull()
+    public async Task GetEventById_WithNonExistentId_ReturnNull()
     {
         // Arrange
         const int wrongId = 100;
 
         // Act
-        var result = _service.GetEventById(wrongId);
+        var result = await _service.GetEventByIdAsync(wrongId, CancellationToken.None);
 
         // Assert
         Assert.Null(result);

@@ -24,9 +24,10 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
 
         if (!string.IsNullOrEmpty(title))
         {
-            // todo временная мера. Не оптимально, но сейчас лучше не сделать
-            query = query
-                .Where(e => e.Title.ToLower().Contains(title.ToLower()));
+            query = dbContext.Database.ProviderName?.Contains("Npgsql") == true
+                ? query.Where(e => EF.Functions.ILike(e.Title, $"%{title}%"))
+                // для тестов, ILike не поддерживается для sqlLite БД
+                : query.Where(e => e.Title.ToLower().Contains(title.ToLower()));
         }
 
         if (from.HasValue)
@@ -55,12 +56,6 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
             Page = page,
             PageSize = items.Count
         };
-    }
-
-    // todo уберу на следующем рефакторе, оставлю только async метод 
-    public Event? GetEventById(int id)
-    {
-        return dbContext.Events.FirstOrDefault(o => o.Id == id);
     }
 
     public async Task<Event?> GetEventByIdAsync(int id, CancellationToken cancellationToken)

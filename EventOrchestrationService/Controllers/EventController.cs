@@ -50,11 +50,12 @@ public class EventController(IEventService eventService, IBookingService booking
     /// Получить событие по ID.
     /// </summary>
     /// <param name="id">ID события.</param>
+    /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Событие с указанным ID.</returns>
     [HttpGet("{id:int}")]
-    public IActionResult GetEventById(int id)
+    public async Task<IActionResult> GetEventById(int id, CancellationToken cancellationToken)
     {
-        var targetEvent = eventService.GetEventById(id);
+        var targetEvent = await eventService.GetEventByIdAsync(id, cancellationToken);
 
         if (targetEvent == null)
         {
