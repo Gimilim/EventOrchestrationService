@@ -83,11 +83,12 @@ public class EventController(IEventService eventService, IBookingService booking
     /// </summary>
     /// <param name="id">ID события.</param>
     /// <param name="updateEventRequest">Новые данные события.</param>
+    /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Обновлённое событие.</returns>
     [HttpPut("{id:int}")]
-    public IActionResult Update(int id, [FromBody] Event updateEventRequest)
+    public async Task <IActionResult> Update(int id, [FromBody] Event updateEventRequest, CancellationToken cancellationToken)
     {
-        var updatedEventResult = eventService.UpdateEvent(id, updateEventRequest);
+        var updatedEventResult = await eventService.UpdateEventAsync(id, updateEventRequest, cancellationToken);
 
         if (updatedEventResult == null)
         {

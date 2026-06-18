@@ -217,7 +217,7 @@ public class EventServiceTests : IDisposable
         };
 
         // Act
-        var updateResult = _service.UpdateEvent(created.Id, updateRequestData);
+        var updateResult = await _service.UpdateEventAsync(created.Id, updateRequestData, CancellationToken.None);
 
         // Assert
         Assert.NotNull(updateResult);
@@ -394,7 +394,7 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что получаем null в ответ
     /// </summary>
     [Fact]
-    public void Update_WithNonExistentId_ReturnsNull()
+    public async Task Update_WithNonExistentId_ReturnsNull()
     {
         // Arrange
         const int wrongId = 100;
@@ -409,7 +409,7 @@ public class EventServiceTests : IDisposable
         };
 
         // Act
-        var result = _service.UpdateEvent(wrongId, updateRequestData);
+        var result = await _service.UpdateEventAsync(wrongId, updateRequestData, CancellationToken.None);
 
         // Assert
         Assert.Null(result);
