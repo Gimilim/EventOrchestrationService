@@ -18,7 +18,7 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
         }
     }
 
-    public PaginatedResult GetEvents(string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 10)
+    public async Task<PaginatedResult> GetEventsAsync(string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
         IQueryable<Event> query = dbContext.Events;
 
@@ -42,12 +42,12 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
                 .Where(e => e.EndAt <= to);
         }
 
-        var items = query
+        var items = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToList();
+            .ToListAsync(cancellationToken);
 
-        var totalCount = query.Count();
+        var totalCount = await query.CountAsync(cancellationToken);
 
         return new PaginatedResult
         {

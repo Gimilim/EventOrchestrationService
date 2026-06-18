@@ -32,6 +32,7 @@ public class EventController(IEventService eventService, IBookingService booking
     /// <param name="to">Опциональный, события, которые заканчиваются не позже указанной даты.</param>
     /// <param name="page">Опциональный (по умолчанию = 1), страница, которую необходимо вернуть.</param>
     /// <param name="pageSize">Опциональный (по умолчанию = 10), количество элементов на странице.</param>
+    /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>
     /// Объект PaginatedResult содержащий:
     /// - TotalCount: общее количество отфильтрованных событий
@@ -41,9 +42,9 @@ public class EventController(IEventService eventService, IBookingService booking
     /// </returns>
     /// <response code="200">Успешный возврат пагинированного списка</response>
     [HttpGet]
-    public IActionResult GetEvents(string? title, DateTime? from, DateTime? to, int page = 1, int pageSize = 10)
+    public async Task<IActionResult> GetEvents(string? title, DateTime? from, DateTime? to, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
-        return Ok(eventService.GetEvents(title, from, to, page, pageSize));
+        return Ok(await eventService.GetEventsAsync(title, from, to, page, pageSize, cancellationToken));
     }
 
     /// <summary>
