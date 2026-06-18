@@ -26,6 +26,8 @@ public class Event
 
     public int AvailableSeats { get; set; }
 
+    public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+
     public bool TryReserveSeats(int count = 1)
     {
         lock (_seatsLock)
