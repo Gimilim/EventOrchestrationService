@@ -32,6 +32,7 @@ public class EventController(IEventService eventService, IBookingService booking
     /// <param name="to">Опциональный, события, которые заканчиваются не позже указанной даты.</param>
     /// <param name="page">Опциональный (по умолчанию = 1), страница, которую необходимо вернуть.</param>
     /// <param name="pageSize">Опциональный (по умолчанию = 10), количество элементов на странице.</param>
+    /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>
     /// Объект PaginatedResult содержащий:
     /// - TotalCount: общее количество отфильтрованных событий
@@ -41,20 +42,21 @@ public class EventController(IEventService eventService, IBookingService booking
     /// </returns>
     /// <response code="200">Успешный возврат пагинированного списка</response>
     [HttpGet]
-    public IActionResult GetEvents(string? title, DateTime? from, DateTime? to, int page = 1, int pageSize = 10)
+    public async Task<IActionResult> GetEvents(string? title, DateTime? from, DateTime? to, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
-        return Ok(eventService.GetEvents(title, from, to, page, pageSize));
+        return Ok(await eventService.GetEventsAsync(title, from, to, page, pageSize, cancellationToken));
     }
 
     /// <summary>
     /// Получить событие по ID.
     /// </summary>
     /// <param name="id">ID события.</param>
+    /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Событие с указанным ID.</returns>
     [HttpGet("{id:int}")]
-    public IActionResult GetEventById(int id)
+    public async Task<IActionResult> GetEventById(int id, CancellationToken cancellationToken)
     {
-        var targetEvent = eventService.GetEventById(id);
+        var targetEvent = await eventService.GetEventByIdAsync(id, cancellationToken);
 
         if (targetEvent == null)
         {
@@ -82,11 +84,12 @@ public class EventController(IEventService eventService, IBookingService booking
     /// </summary>
     /// <param name="id">ID события.</param>
     /// <param name="updateEventRequest">Новые данные события.</param>
+    /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Обновлённое событие.</returns>
     [HttpPut("{id:int}")]
-    public IActionResult Update(int id, [FromBody] Event updateEventRequest)
+    public async Task <IActionResult> Update(int id, [FromBody] Event updateEventRequest, CancellationToken cancellationToken)
     {
-        var updatedEventResult = eventService.UpdateEvent(id, updateEventRequest);
+        var updatedEventResult = await eventService.UpdateEventAsync(id, updateEventRequest, cancellationToken);
 
         if (updatedEventResult == null)
         {
@@ -100,11 +103,12 @@ public class EventController(IEventService eventService, IBookingService booking
     /// Удалить событие.
     /// </summary>
     /// <param name="id">ID события.</param>
+    /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Статус удаления.</returns>
     [HttpDelete("{id:int}")]
-    public IActionResult Delete(int id)
+    public async Task <IActionResult>  Delete(int id, CancellationToken cancellationToken)
     {
-        var deleteResult = eventService.DeleteEvent(id);
+        var deleteResult = await eventService.DeleteEventAsync(id, cancellationToken);
 
         if (!deleteResult)
         {

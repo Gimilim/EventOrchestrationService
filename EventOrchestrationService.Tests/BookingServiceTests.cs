@@ -195,7 +195,7 @@ public class BookingServiceTests : IDisposable
         SeedEvents();
 
         var eventService = new EventService(_context, new Event.EventValidator());
-        eventService.DeleteEvent(2);
+        await eventService.DeleteEventAsync(2, CancellationToken.None);
 
         // Act & Assert
         await Assert.ThrowsAsync<NotFoundException>(

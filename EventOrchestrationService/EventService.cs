@@ -18,15 +18,16 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
         }
     }
 
-    public PaginatedResult GetEvents(string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 10)
+    public async Task<PaginatedResult> GetEventsAsync(string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
         IQueryable<Event> query = dbContext.Events;
 
         if (!string.IsNullOrEmpty(title))
         {
-            // todo временная мера. Не оптимально, но сейчас лучше не сделать
-            query = query
-                .Where(e => e.Title.ToLower().Contains(title.ToLower()));
+            query = dbContext.Database.ProviderName?.Contains("Npgsql") == true
+                ? query.Where(e => EF.Functions.ILike(e.Title, $"%{title}%"))
+                // для тестов, ILike не поддерживается для sqlLite БД
+                : query.Where(e => e.Title.ToLower().Contains(title.ToLower()));
         }
 
         if (from.HasValue)
@@ -41,12 +42,12 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
                 .Where(e => e.EndAt <= to);
         }
 
-        var items = query
+        var items = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToList();
+            .ToListAsync(cancellationToken);
 
-        var totalCount = query.Count();
+        var totalCount = await query.CountAsync(cancellationToken);
 
         return new PaginatedResult
         {
@@ -55,12 +56,6 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
             Page = page,
             PageSize = items.Count
         };
-    }
-
-    // todo уберу на следующем рефакторе, оставлю только async метод 
-    public Event? GetEventById(int id)
-    {
-        return dbContext.Events.FirstOrDefault(o => o.Id == id);
     }
 
     public async Task<Event?> GetEventByIdAsync(int id, CancellationToken cancellationToken)
@@ -122,16 +117,16 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
         return existingEvent;
     }
 
-    public bool DeleteEvent(int id)
+    public async Task<bool> DeleteEventAsync(int id, CancellationToken cancellationToken)
     {
-        var targetEvent = dbContext.Events.FirstOrDefault(o => o.Id == id);
+        var targetEvent = await dbContext.Events.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
         if (targetEvent == null)
         {
             return false;
         }
 
         dbContext.Events.Remove(targetEvent);
-        dbContext.SaveChanges();
+        await dbContext.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

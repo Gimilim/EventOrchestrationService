@@ -137,7 +137,7 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что можем запросить конкретную страницу и получить ожидаемый результат
     /// </summary>
     [Fact]
-    public void GetEvents_WhenEventsExist_ReturnsPaginatedResult()
+    public async Task GetEvents_WhenEventsExist_ReturnsPaginatedResult()
     {
         // Arrange
         SeedDatabase();
@@ -146,8 +146,8 @@ public class EventServiceTests : IDisposable
         const int targetPage = 3;
 
         // Act
-        var getDefaultEventsResult = _service.GetEvents();
-        var getEventsResultWithPageParameter = _service.GetEvents(page: 3);
+        var getDefaultEventsResult = await _service.GetEventsAsync();
+        var getEventsResultWithPageParameter = await _service.GetEventsAsync(page: 3);
 
         // Assert
         Assert.NotNull(getDefaultEventsResult);
@@ -177,7 +177,7 @@ public class EventServiceTests : IDisposable
         var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
 
         // Act
-        var result = _service.GetEventById(created.Id);
+        var result = await _service.GetEventByIdAsync(created.Id, CancellationToken.None);
 
         // Assert
         Assert.NotNull(result);
@@ -217,7 +217,7 @@ public class EventServiceTests : IDisposable
         };
 
         // Act
-        var updateResult = _service.UpdateEvent(created.Id, updateRequestData);
+        var updateResult = await _service.UpdateEventAsync(created.Id, updateRequestData, CancellationToken.None);
 
         // Assert
         Assert.NotNull(updateResult);
@@ -247,9 +247,9 @@ public class EventServiceTests : IDisposable
         var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
 
         // Act
-        var getEventBeforeDelete = _service.GetEventById(created.Id);
-        var deleteResult = _service.DeleteEvent(created.Id);
-        var getEventAfterDeleting = _service.GetEventById(created.Id);
+        var getEventBeforeDelete = await _service.GetEventByIdAsync(created.Id, CancellationToken.None);
+        var deleteResult = await _service.DeleteEventAsync(created.Id, CancellationToken.None);
+        var getEventAfterDeleting = await _service.GetEventByIdAsync(created.Id, CancellationToken.None);
 
         // Assert
         Assert.NotNull(getEventBeforeDelete);
@@ -262,14 +262,14 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что получаем в результате все 3 события у которых в составе названия есть подстрока. Независимо от регистра.
     /// </summary>
     [Fact]
-    public void GetEvents_WithTitleFilter_ReturnsMatchingEvents()
+    public async Task GetEvents_WithTitleFilter_ReturnsMatchingEvents()
     {
         // Arrange
         SeedDatabase();
         var expectedIds = new[] { 4, 5, 6 };
 
         // Act
-        var getResult = _service.GetEvents(title: "abc");
+        var getResult = await _service.GetEventsAsync(title: "abc");
 
         // Assert
         Assert.NotNull(getResult);
@@ -282,7 +282,7 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что получаем правильный результат с фильтрами по дате
     /// </summary>
     [Fact]
-    public void GetEvents_WithDateRange_ReturnsEventsWithinRange()
+    public async Task GetEvents_WithDateRange_ReturnsEventsWithinRange()
     {
         // Arrange
         SeedDatabase();
@@ -290,8 +290,8 @@ public class EventServiceTests : IDisposable
         var expectedIdsWithToFilter = new[] { 1, 2, 3, 4, 5, 9 };
 
         // Act
-        var getResultWithFromFilter = _service.GetEvents(from: new DateTime(2055, 1, 1));
-        var getResultWithToFilter = _service.GetEvents(to: new DateTime(2030, 12, 31));
+        var getResultWithFromFilter = await _service.GetEventsAsync(from: new DateTime(2055, 1, 1));
+        var getResultWithToFilter = await _service.GetEventsAsync(to: new DateTime(2030, 12, 31));
 
         // Assert
         Assert.Equal(expectedIdsWithFromFilter, getResultWithFromFilter.Items.Select(e => e.Id));
@@ -303,7 +303,7 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что получаем ожидаемый набор события для разных настроей пагинации
     /// </summary>
     [Fact]
-    public void GetEvents_WithPagination_ReturnsCorrectPage()
+    public async Task GetEvents_WithPagination_ReturnsCorrectPage()
     {
         // Arrange
         SeedDatabase();
@@ -318,12 +318,12 @@ public class EventServiceTests : IDisposable
         var expectedIdsForPageAndPageSizeParameter = new[] { 5, 6 };
 
         // Act
-        var getDefaultEventsResult = _service.GetEvents();
+        var getDefaultEventsResult = await _service.GetEventsAsync();
 
-        var getEventsResultWithPageParameter = _service.GetEvents(page: targetPage);
+        var getEventsResultWithPageParameter = await _service.GetEventsAsync(page: targetPage);
         var getEventsResultWithPageAndPageSizeParameter =
-            _service.GetEvents(page: targetPage, pageSize: targetPageSize);
-        var getEventsResultWithPageSizeParameter = _service.GetEvents(pageSize: targetPageSize);
+            await _service.GetEventsAsync(page: targetPage, pageSize: targetPageSize);
+        var getEventsResultWithPageSizeParameter = await _service.GetEventsAsync(pageSize: targetPageSize);
 
         // Assert
         // Проверяем, что по умолчанию получаем по 10 событий на страницу
@@ -355,14 +355,14 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что получаем ожидаемый набор события для комбинации фильтров
     /// </summary>
     [Fact]
-    public void GetEvents_WithMultipleFilters_ReturnsFilteredEvents()
+    public async Task GetEvents_WithMultipleFilters_ReturnsFilteredEvents()
     {
         // Arrange
         SeedDatabase();
         var expectedIds = new[] { 4, 5 };
 
         // Act
-        var getResult = _service.GetEvents(
+        var getResult = await _service.GetEventsAsync(
             title: "abc",
             from: new DateTime(2025, 1, 1),
             to: new DateTime(2029, 1, 1)
@@ -377,13 +377,13 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что получаем null в ответ
     /// </summary>
     [Fact]
-    public void GetEventById_WithNonExistentId_ReturnNull()
+    public async Task GetEventById_WithNonExistentId_ReturnNull()
     {
         // Arrange
         const int wrongId = 100;
 
         // Act
-        var result = _service.GetEventById(wrongId);
+        var result = await _service.GetEventByIdAsync(wrongId, CancellationToken.None);
 
         // Assert
         Assert.Null(result);
@@ -394,7 +394,7 @@ public class EventServiceTests : IDisposable
     /// Проверяем, что получаем null в ответ
     /// </summary>
     [Fact]
-    public void Update_WithNonExistentId_ReturnsNull()
+    public async Task Update_WithNonExistentId_ReturnsNull()
     {
         // Arrange
         const int wrongId = 100;
@@ -409,7 +409,7 @@ public class EventServiceTests : IDisposable
         };
 
         // Act
-        var result = _service.UpdateEvent(wrongId, updateRequestData);
+        var result = await _service.UpdateEventAsync(wrongId, updateRequestData, CancellationToken.None);
 
         // Assert
         Assert.Null(result);

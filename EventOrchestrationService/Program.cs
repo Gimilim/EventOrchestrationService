@@ -10,8 +10,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 
+var isDevelopment = builder.Environment.IsDevelopment();
+
+var connectionString = builder.Configuration.GetConnectionString("PostgresqlConnection")
+                       ?? throw new InvalidOperationException("Connection string 'PostgresqlConnection' not found.");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseNpgsql(connectionString);
+
+    if (isDevelopment)
+        options.LogTo(Console.WriteLine, LogLevel.Information)
+            .EnableDetailedErrors()
+            .EnableSensitiveDataLogging();
+});
 
 builder.Services.AddControllers();
 builder.Services.AddHostedService<BookingBackgroundService>();
