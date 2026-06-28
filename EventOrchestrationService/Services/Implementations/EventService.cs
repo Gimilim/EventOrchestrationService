@@ -1,4 +1,4 @@
-using EventOrchestrationService.Data;
+using EventOrchestrationService.Data.Repositories.Interfaces;
 using EventOrchestrationService.DTOs;
 using EventOrchestrationService.Entities;
 using EventOrchestrationService.Services.Interfaces;
@@ -7,7 +7,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventOrchestrationService.Services.Implementations;
 
-public class EventService(AppDbContext dbContext, IValidator<Event> validator) : IEventService
+public class EventService(IValidator<Event> validator, IEventRepository eventRepository)
+    : IEventService
 {
     private void Validate(Event eventToValidate)
     {
@@ -18,29 +19,10 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
         }
     }
 
-    public async Task<PaginatedResult> GetEventsAsync(string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+    public async Task<PaginatedResult> GetEventsAsync(string? title = null, DateTime? from = null, DateTime? to = null,
+        int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
-        IQueryable<Event> query = dbContext.Events;
-
-        if (!string.IsNullOrEmpty(title))
-        {
-            query = dbContext.Database.ProviderName?.Contains("Npgsql") == true
-                ? query.Where(e => EF.Functions.ILike(e.Title, $"%{title}%"))
-                // для тестов, ILike не поддерживается для sqlLite БД
-                : query.Where(e => e.Title.ToLower().Contains(title.ToLower()));
-        }
-
-        if (from.HasValue)
-        {
-            query = query
-                .Where(e => e.StartAt >= from);
-        }
-
-        if (to.HasValue)
-        {
-            query = query
-                .Where(e => e.EndAt <= to);
-        }
+        var query = eventRepository.FilterEvents(title, from, to);
 
         var items = await query
             .Skip((page - 1) * pageSize)
@@ -60,7 +42,7 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
 
     public async Task<Event?> GetEventByIdAsync(int id, CancellationToken cancellationToken)
     {
-        return await dbContext.Events.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+        return await eventRepository.GetByIdAsync(id, cancellationToken);
     }
 
     public async Task<Event> CreateEventAsync(Event newEvent, CancellationToken cancellationToken)
@@ -68,38 +50,17 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
         newEvent.AvailableSeats = newEvent.TotalSeats;
         Validate(newEvent);
 
-        await dbContext.Events.AddAsync(newEvent, cancellationToken);
+        await eventRepository.AddAsync(newEvent, cancellationToken);
+        await eventRepository.SaveChangesAsync(cancellationToken);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
         return newEvent;
-    }
-
-    // todo уберу на следующем рефакторе, оставлю только async метод 
-    public Event? UpdateEvent(int id, Event updatedEvent)
-    {
-        Validate(updatedEvent);
-
-        var existingEvent = dbContext.Events.FirstOrDefault(o => o.Id == id);
-
-        if (existingEvent == null)
-        {
-            return null;
-        }
-
-        existingEvent.Title = updatedEvent.Title;
-        existingEvent.Description = updatedEvent.Description;
-        existingEvent.StartAt = updatedEvent.StartAt;
-        existingEvent.EndAt = updatedEvent.EndAt;
-
-        dbContext.SaveChanges();
-        return existingEvent;
     }
 
     public async Task<Event?> UpdateEventAsync(int id, Event updatedEvent, CancellationToken cancellationToken)
     {
         Validate(updatedEvent);
 
-        var existingEvent = await dbContext.Events.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+        var existingEvent = await eventRepository.GetByIdAsync(id, cancellationToken);
 
         if (existingEvent == null)
         {
@@ -113,20 +74,22 @@ public class EventService(AppDbContext dbContext, IValidator<Event> validator) :
         existingEvent.TotalSeats = updatedEvent.TotalSeats;
         existingEvent.AvailableSeats = updatedEvent.AvailableSeats;
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await eventRepository.SaveChangesAsync(cancellationToken);
+
         return existingEvent;
     }
 
     public async Task<bool> DeleteEventAsync(int id, CancellationToken cancellationToken)
     {
-        var targetEvent = await dbContext.Events.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+        var targetEvent = await eventRepository.GetByIdAsync(id, cancellationToken);
         if (targetEvent == null)
         {
             return false;
         }
 
-        dbContext.Events.Remove(targetEvent);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await eventRepository.DeleteAsync(targetEvent);
+        await eventRepository.SaveChangesAsync(cancellationToken);
+
         return true;
     }
 }
