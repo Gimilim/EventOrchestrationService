@@ -1,4 +1,6 @@
-﻿namespace EventOrchestrationService.Models.DTO;
+﻿using EventOrchestrationService.Entities;
+
+namespace EventOrchestrationService.DTOs;
 
 public class PaginatedResult
 {

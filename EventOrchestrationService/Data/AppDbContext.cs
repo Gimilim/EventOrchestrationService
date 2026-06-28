@@ -1,4 +1,4 @@
-﻿using EventOrchestrationService.Models;
+﻿using EventOrchestrationService.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventOrchestrationService.Data;

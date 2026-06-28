@@ -1,7 +1,9 @@
 using EventOrchestrationService;
 using EventOrchestrationService.BackgroundServices;
 using EventOrchestrationService.Data;
-using EventOrchestrationService.Models;
+using EventOrchestrationService.Entities;
+using EventOrchestrationService.Services.Implementations;
+using EventOrchestrationService.Services.Interfaces;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 

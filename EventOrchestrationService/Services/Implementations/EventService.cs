@@ -1,11 +1,11 @@
 using EventOrchestrationService.Data;
-using EventOrchestrationService.Exceptions;
-using EventOrchestrationService.Models;
-using EventOrchestrationService.Models.DTO;
+using EventOrchestrationService.DTOs;
+using EventOrchestrationService.Entities;
+using EventOrchestrationService.Services.Interfaces;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
-namespace EventOrchestrationService;
+namespace EventOrchestrationService.Services.Implementations;
 
 public class EventService(AppDbContext dbContext, IValidator<Event> validator) : IEventService
 {

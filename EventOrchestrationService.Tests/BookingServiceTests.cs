@@ -1,6 +1,8 @@
 ﻿using EventOrchestrationService.Data;
+using EventOrchestrationService.Entities;
 using EventOrchestrationService.Exceptions;
-using EventOrchestrationService.Models;
+using EventOrchestrationService.Services.Implementations;
+using EventOrchestrationService.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventOrchestrationService.Tests;

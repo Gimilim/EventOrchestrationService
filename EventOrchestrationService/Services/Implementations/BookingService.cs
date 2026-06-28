@@ -1,9 +1,10 @@
 ﻿using EventOrchestrationService.Data;
+using EventOrchestrationService.Entities;
 using EventOrchestrationService.Exceptions;
-using EventOrchestrationService.Models;
+using EventOrchestrationService.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace EventOrchestrationService;
+namespace EventOrchestrationService.Services.Implementations;
 
 public class BookingService(AppDbContext dbContext, IEventService eventService) : IBookingService
 {

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace EventOrchestrationService.Models;
+namespace EventOrchestrationService.Entities;
 
 public class Booking
 {

@@ -1,0 +1,6 @@
+﻿namespace EventOrchestrationService.Data.Repositories.Interfaces;
+
+public interface IEventRepository
+{
+    
+}
