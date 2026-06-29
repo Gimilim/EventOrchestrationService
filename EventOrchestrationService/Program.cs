@@ -1,6 +1,8 @@
 using EventOrchestrationService;
 using EventOrchestrationService.BackgroundServices;
 using EventOrchestrationService.Data;
+using EventOrchestrationService.Data.Repositories.Implementations;
+using EventOrchestrationService.Data.Repositories.Interfaces;
 using EventOrchestrationService.Entities;
 using EventOrchestrationService.Services.Implementations;
 using EventOrchestrationService.Services.Interfaces;
@@ -9,6 +11,8 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddScoped<IEventRepository, EventRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 
@@ -35,12 +39,26 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+if (isDevelopment)
 {
-    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    context.Database.EnsureCreated();
-    DbInitializer.Initialize(context);
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        context.Database.Migrate();
+    }
+    catch
+    {
+        return;
+    }
 }
+
+// using (var scope = app.Services.CreateScope())
+// {
+//     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+//     context.Database.EnsureCreated();
+//     DbInitializer.Initialize(context);
+// }
 
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
