@@ -11,7 +11,7 @@ public class EventRepository(AppDbContext dbContext) : IEventRepository
         return dbContext.Events;
     }
 
-    public async Task<Event?> GetByIdAsync(int id, CancellationToken cancellationToken)
+    public async Task<Event?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return await dbContext.Events.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
     }
@@ -34,7 +34,7 @@ public class EventRepository(AppDbContext dbContext) : IEventRepository
 
     public string? GetDatabaseProviderName() => dbContext.Database.ProviderName;
 
-    public IQueryable<Event> FilterEvents(string? title, DateTime? from, DateTime? to)
+    public IQueryable<Event> FilterEvents(string? title = null, DateTime? from = null, DateTime? to = null)
     {
         var query = dbContext.Events.AsQueryable();
 
