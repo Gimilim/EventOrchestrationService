@@ -24,7 +24,6 @@ public abstract class IntegrationTestBase : IAsyncLifetime
     protected AppDbContext CreateContext()
     {
         var context = new AppDbContext(_options);
-        context.Database.EnsureCreated();
         return context;
     }
 
@@ -33,7 +32,7 @@ public abstract class IntegrationTestBase : IAsyncLifetime
         NpgsqlConnection.ClearAllPools();
         await using var context = CreateContext();
         await context.Database.EnsureDeletedAsync();
-        await context.Database.EnsureCreatedAsync();
+        await context.Database.MigrateAsync();
     }
 
     public async Task InitializeAsync()
