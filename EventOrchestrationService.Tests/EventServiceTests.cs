@@ -1,5 +1,8 @@
 using EventOrchestrationService.Data;
-using EventOrchestrationService.Models;
+using EventOrchestrationService.Data.Repositories.Implementations;
+using EventOrchestrationService.Entities;
+using EventOrchestrationService.Services.Implementations;
+using EventOrchestrationService.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventOrchestrationService.Tests;
@@ -17,7 +20,7 @@ public class EventServiceTests : IDisposable
         _context = new AppDbContext(options);
         _context.Database.OpenConnection();
         _context.Database.EnsureCreated();
-        _service = new EventService(_context, new Event.EventValidator());
+        _service = new EventService(new Event.EventValidator(), new EventRepository(_context));
     }
 
     public void Dispose()

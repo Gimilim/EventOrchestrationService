@@ -1,6 +1,9 @@
 ﻿using EventOrchestrationService.Data;
+using EventOrchestrationService.Data.Repositories.Implementations;
+using EventOrchestrationService.Entities;
 using EventOrchestrationService.Exceptions;
-using EventOrchestrationService.Models;
+using EventOrchestrationService.Services.Implementations;
+using EventOrchestrationService.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventOrchestrationService.Tests;
@@ -19,8 +22,8 @@ public class BookingServiceTests : IDisposable
         _context = new AppDbContext(options);
         _context.Database.OpenConnection();
         _context.Database.EnsureCreated();
-        _eventService = new EventService(_context, new Event.EventValidator());
-        _service = new BookingService(_context, _eventService);
+        _eventService = new EventService(new Event.EventValidator(), new EventRepository(_context));
+        _service = new BookingService(_eventService,  new BookingRepository(_context));
     }
 
     public void Dispose()
@@ -194,7 +197,7 @@ public class BookingServiceTests : IDisposable
         // Arrange
         SeedEvents();
 
-        var eventService = new EventService(_context, new Event.EventValidator());
+        var eventService = new EventService(new Event.EventValidator(), new EventRepository(_context));
         await eventService.DeleteEventAsync(2, CancellationToken.None);
 
         // Act & Assert

@@ -1,7 +1,7 @@
-﻿using EventOrchestrationService.Models;
-using EventOrchestrationService.Models.DTO;
+﻿using EventOrchestrationService.DTOs;
+using EventOrchestrationService.Entities;
 
-namespace EventOrchestrationService;
+namespace EventOrchestrationService.Services.Interfaces;
 
 public interface IEventService
 {

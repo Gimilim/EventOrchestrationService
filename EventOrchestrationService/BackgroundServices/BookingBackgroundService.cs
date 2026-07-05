@@ -1,5 +1,6 @@
 ﻿using EventOrchestrationService.Data;
-using EventOrchestrationService.Models;
+using EventOrchestrationService.Entities;
+using EventOrchestrationService.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventOrchestrationService.BackgroundServices;

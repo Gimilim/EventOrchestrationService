@@ -1,4 +1,5 @@
 ﻿using EventOrchestrationService.Exceptions;
+using EventOrchestrationService.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventOrchestrationService.Controllers;

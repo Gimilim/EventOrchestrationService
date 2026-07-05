@@ -1,11 +1,11 @@
-﻿using EventOrchestrationService.Data;
+﻿using EventOrchestrationService.Data.Repositories.Interfaces;
+using EventOrchestrationService.Entities;
 using EventOrchestrationService.Exceptions;
-using EventOrchestrationService.Models;
-using Microsoft.EntityFrameworkCore;
+using EventOrchestrationService.Services.Interfaces;
 
-namespace EventOrchestrationService;
+namespace EventOrchestrationService.Services.Implementations;
 
-public class BookingService(AppDbContext dbContext, IEventService eventService) : IBookingService
+public class BookingService(IEventService eventService, IBookingRepository bookingRepository) : IBookingService
 {
     private readonly SemaphoreSlim _bookingLock = new(1, 1);
 
@@ -30,8 +30,8 @@ public class BookingService(AppDbContext dbContext, IEventService eventService) 
                 EventId = eventId
             };
 
-            await dbContext.Bookings.AddAsync(createdBooking, cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
+            await bookingRepository.AddAsync(createdBooking, cancellationToken);
+            await bookingRepository.SaveChangesAsync(cancellationToken);
 
             return createdBooking;
         }
@@ -43,7 +43,6 @@ public class BookingService(AppDbContext dbContext, IEventService eventService) 
 
     public async Task<Booking?> GetBookingByIdAsync(int bookingId, CancellationToken cancellationToken)
     {
-        return await dbContext.Bookings
-            .FirstOrDefaultAsync(b => b.Id == bookingId, cancellationToken);
+        return await bookingRepository.GetByIdAsync(bookingId, cancellationToken);
     }
 }

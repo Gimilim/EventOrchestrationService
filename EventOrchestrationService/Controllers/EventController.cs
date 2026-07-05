@@ -1,5 +1,6 @@
-﻿using EventOrchestrationService.Exceptions;
-using EventOrchestrationService.Models;
+﻿using EventOrchestrationService.Entities;
+using EventOrchestrationService.Exceptions;
+using EventOrchestrationService.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventOrchestrationService.Controllers;

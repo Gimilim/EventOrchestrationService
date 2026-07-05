@@ -1,6 +1,6 @@
-﻿using EventOrchestrationService.Models;
+﻿using EventOrchestrationService.Entities;
 
-namespace EventOrchestrationService;
+namespace EventOrchestrationService.Services.Interfaces;
 
 public interface IBookingService
 {

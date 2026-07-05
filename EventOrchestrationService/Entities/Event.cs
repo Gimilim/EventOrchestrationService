@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using FluentValidation;
 
-namespace EventOrchestrationService.Models;
+namespace EventOrchestrationService.Entities;
 
 public class Event
 {
