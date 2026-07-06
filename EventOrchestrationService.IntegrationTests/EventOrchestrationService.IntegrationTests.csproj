@@ -18,7 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\EventOrchestrationService\EventOrchestrationService.csproj" />
+        <ProjectReference Include="..\EventOrchestrationService.Domain\EventOrchestrationService.Domain.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,6 +1,6 @@
 ﻿using EventOrchestrationService.Entities;
 
-namespace EventOrchestrationService.Data.Repositories.Interfaces;
+namespace EventOrchestrationService.Application.Interfaces;
 
 public interface IBookingRepository
 {

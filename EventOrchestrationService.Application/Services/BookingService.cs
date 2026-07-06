@@ -1,9 +1,8 @@
-﻿using EventOrchestrationService.Data.Repositories.Interfaces;
+﻿using EventOrchestrationService.Application.Interfaces;
 using EventOrchestrationService.Entities;
 using EventOrchestrationService.Exceptions;
-using EventOrchestrationService.Services.Interfaces;
 
-namespace EventOrchestrationService.Services.Implementations;
+namespace EventOrchestrationService.Application.Services;
 
 public class BookingService(IEventService eventService, IBookingRepository bookingRepository) : IBookingService
 {

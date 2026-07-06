@@ -1,6 +1,6 @@
 ﻿using EventOrchestrationService.Entities;
 
-namespace EventOrchestrationService.DTOs;
+namespace EventOrchestrationService.Application.DTOs;
 
 public class PaginatedResult
 {

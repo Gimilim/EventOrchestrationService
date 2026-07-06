@@ -1,11 +1,10 @@
-using EventOrchestrationService.Data.Repositories.Interfaces;
-using EventOrchestrationService.DTOs;
+using EventOrchestrationService.Application.DTOs;
+using EventOrchestrationService.Application.Interfaces;
 using EventOrchestrationService.Entities;
-using EventOrchestrationService.Services.Interfaces;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
-namespace EventOrchestrationService.Services.Implementations;
+namespace EventOrchestrationService.Application.Services;
 
 public class EventService(IValidator<Event> validator, IEventRepository eventRepository)
     : IEventService

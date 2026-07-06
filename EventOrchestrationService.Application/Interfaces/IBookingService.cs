@@ -1,6 +1,6 @@
 ﻿using EventOrchestrationService.Entities;
 
-namespace EventOrchestrationService.Services.Interfaces;
+namespace EventOrchestrationService.Application.Interfaces;
 
 public interface IBookingService
 {
