@@ -1,29 +1,43 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using EventOrchestrationService.Domain.Enums;
+using EventOrchestrationService.Domain.Exceptions;
 
-namespace EventOrchestrationService.Entities;
+namespace EventOrchestrationService.Domain.Entities;
 
 public class Booking
 {
-    [Required(ErrorMessage = "ИД бронирования обязателен для заполнения")]
-    public int Id { get; set; }
+    private Booking()
+    {
+    }
 
-    [Required(ErrorMessage = "ИД события, к которому относится бронирование, обязателен для заполнения")]
-    public int EventId { get; set; }
+    public Booking(int eventId, BookingStatus status)
+    {
+        if (eventId <= 0)
+            throw new ValidationException("ИД события обязательно для заполнения");
 
-    [Required(ErrorMessage = "Текущий статус бронирования обязателен для заполнения")]
-    public BookingStatus Status { get; set; }
+        EventId = eventId;
+        Status = status;
+        CreatedAt = DateTime.UtcNow;
+    }
 
-    [Required(ErrorMessage = "Дата и время создания бронирования обязательны для заполнения")]
-    public DateTime CreatedAt { get; set; }
+    public int Id { get; private set; }
+    public int EventId { get; private set; }
+    public BookingStatus Status { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime? ProcessedAt { get; private set; }
+    public Event Event { get; private set; }
 
-    public DateTime? ProcessedAt { get; set; }
+    public void Confirm()
+    {
+        if (Status != BookingStatus.Pending)
+            throw new ValidationException("Только брони в статусе 'В обработке' могут быть подтверждены");
 
-    public Event Event { get; set; }
-}
+        Status = BookingStatus.Confirmed;
+        ProcessedAt = DateTime.UtcNow;
+    }
 
-public enum BookingStatus
-{
-    Pending = 1,
-    Confirmed = 2,
-    Rejected = 3
+    public void Reject()
+    {
+        Status = BookingStatus.Rejected;
+        ProcessedAt = DateTime.UtcNow;
+    }
 }

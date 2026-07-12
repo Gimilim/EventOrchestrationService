@@ -1,3 +1,3 @@
-﻿namespace EventOrchestrationService.Exceptions;
+﻿namespace EventOrchestrationService.Domain.Exceptions;
 
-public class NoAvailableSeatsException(string message) : Exception(message);
+public class NoAvailableSeatsException(string message) : DomainException(message);

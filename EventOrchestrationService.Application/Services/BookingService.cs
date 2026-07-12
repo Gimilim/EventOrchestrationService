@@ -1,5 +1,5 @@
 ﻿using EventOrchestrationService.Application.Interfaces;
-using EventOrchestrationService.Entities;
+using EventOrchestrationService.Domain.Entities;
 using EventOrchestrationService.Exceptions;
 
 namespace EventOrchestrationService.Application.Services;
@@ -22,12 +22,7 @@ public class BookingService(IEventService eventService, IBookingRepository booki
             if (!targetEvent.TryReserveSeats())
                 throw new NoAvailableSeatsException($"На событие с ID {eventId} нет свободных мест");
 
-            var createdBooking = new Booking
-            {
-                Status = BookingStatus.Pending,
-                CreatedAt = DateTime.UtcNow,
-                EventId = eventId
-            };
+            var createdBooking = new Booking(eventId, BookingStatus.Pending);
 
             await bookingRepository.AddAsync(createdBooking, cancellationToken);
             await bookingRepository.SaveChangesAsync(cancellationToken);

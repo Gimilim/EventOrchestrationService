@@ -1,3 +1,3 @@
-﻿namespace EventOrchestrationService.Exceptions;
+﻿namespace EventOrchestrationService.Domain.Exceptions;
 
-public class BadRequestException(string message) : Exception(message);
+public class BadRequestException(string message) : DomainException(message);

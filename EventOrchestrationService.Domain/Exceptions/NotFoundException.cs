@@ -1,3 +1,3 @@
-﻿namespace EventOrchestrationService.Exceptions;
+﻿namespace EventOrchestrationService.Domain.Exceptions;
 
-public class NotFoundException(string message) : Exception(message);
+public class NotFoundException(string message) : DomainException(message);

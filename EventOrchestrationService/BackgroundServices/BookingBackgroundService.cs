@@ -1,5 +1,5 @@
-﻿using EventOrchestrationService.Data;
-using EventOrchestrationService.Entities;
+﻿using EventOrchestrationService.Domain.Entities;
+using EventOrchestrationService.Domain.Enums;
 using EventOrchestrationService.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -75,8 +75,7 @@ public class BookingBackgroundService(
 
                 if (targetEvent == null)
                 {
-                    targetBooking.Status = BookingStatus.Rejected;
-                    targetBooking.ProcessedAt = DateTime.UtcNow;
+                    targetBooking.Reject();
                     await dbContext.SaveChangesAsync(cancellationToken);
 
                     logger.LogWarning("Событие с ID = {EventId} не найдено, бронь с ID = {BookingId} отклонена",
@@ -84,8 +83,7 @@ public class BookingBackgroundService(
                     return;
                 }
 
-                targetBooking.Status = BookingStatus.Confirmed;
-                targetBooking.ProcessedAt = DateTime.UtcNow;
+                targetBooking.Confirm();
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
             finally
@@ -115,8 +113,7 @@ public class BookingBackgroundService(
 
                 if (targetBooking != null)
                 {
-                    targetBooking.Status = BookingStatus.Rejected;
-                    targetBooking.ProcessedAt = DateTime.UtcNow;
+                    targetBooking.Reject();
 
                     var targetEvent = await eventService.GetEventByIdAsync(booking.EventId, cancellationToken);
                     if (targetEvent != null)
