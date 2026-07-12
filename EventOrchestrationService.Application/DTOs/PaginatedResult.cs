@@ -1,8 +1,6 @@
-﻿using EventOrchestrationService.Entities;
+﻿namespace EventOrchestrationService.Application.DTOs;
 
-namespace EventOrchestrationService.Application.DTOs;
-
-public class PaginatedResult
+public class PaginatedResult<T>
 {
     /// <summary>
     /// Общее количество событий
@@ -10,9 +8,9 @@ public class PaginatedResult
     public int TotalCount { get; set; }
 
     /// <summary>
-    /// Массив самих событий
+    /// Массив объектов пагинации
     /// </summary>
-    public List<Event>? Items { get; set; }
+    public IEnumerable<T> Items { get; set; } = new List<T>();
 
     /// <summary>
     /// Номер текущей страницы

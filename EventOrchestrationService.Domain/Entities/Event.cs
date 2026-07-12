@@ -1,4 +1,5 @@
-﻿using EventOrchestrationService.Domain.Exceptions;
+﻿using EventOrchestrationService.Domain.Constants;
+using EventOrchestrationService.Domain.Exceptions;
 
 namespace EventOrchestrationService.Domain.Entities;
 
@@ -64,6 +65,57 @@ public class Event
 
             AvailableSeats = newAvailable;
             return true;
+        }
+    }
+
+    public void Update(string? title, string? description, DateTime? startAt, DateTime? endAt, int? totalSeats)
+    {
+        if (title != null)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                throw new ValidationException("Название события обязательно для заполнения");
+
+            Title = title;
+        }
+
+        if (description != null)
+        {
+            if (description.Length > EventConstants.MaxDescriptionLength)
+                throw new ValidationException(
+                    $"Описание не может быть длиннее {EventConstants.MaxDescriptionLength} символов");
+
+            Description = description;
+        }
+
+        var newStartAt = startAt ?? StartAt;
+        var newEndAt = endAt ?? EndAt;
+
+        if (newEndAt <= newStartAt)
+            throw new ValidationException("Дата окончания должна быть больше даты начала");
+
+        if (startAt.HasValue)
+        {
+            StartAt = startAt.Value;
+        }
+
+        if (endAt.HasValue)
+        {
+            EndAt = endAt.Value;
+        }
+
+        if (totalSeats.HasValue)
+        {
+            if (totalSeats <= 0)
+                throw new ValidationException("Общее количество мест должно быть больше нуля");
+
+            var reservedSeats = TotalSeats - AvailableSeats;
+
+            if (totalSeats < reservedSeats)
+                throw new ValidationException(
+                    $"Нельзя уменьшить количество мест до {totalSeats}, так как уже занято {reservedSeats} мест");
+
+            TotalSeats = totalSeats.Value;
+            AvailableSeats = totalSeats.Value - reservedSeats;
         }
     }
 }

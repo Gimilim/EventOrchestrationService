@@ -1,4 +1,4 @@
-﻿using EventOrchestrationService.Entities;
+﻿using EventOrchestrationService.Domain.Entities;
 
 namespace EventOrchestrationService.Application.Interfaces;
 
@@ -11,4 +11,11 @@ public interface IEventRepository
     Task DeleteAsync(Event targetEvent);
     string? GetDatabaseProviderName();
     IQueryable<Event> FilterEvents(string? title, DateTime? from, DateTime? to);
+
+    Task<(List<Event> Items, int TotalCount)> GetPagedEventsAsync(string? title = null,
+        DateTime? from = null,
+        DateTime? to = null,
+        int page = 1,
+        int pageSize = 10,
+        CancellationToken cancellationToken = default);
 }

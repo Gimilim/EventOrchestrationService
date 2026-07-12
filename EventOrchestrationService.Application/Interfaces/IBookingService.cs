@@ -1,4 +1,4 @@
-﻿using EventOrchestrationService.Entities;
+﻿using EventOrchestrationService.Domain.Entities;
 
 namespace EventOrchestrationService.Application.Interfaces;
 

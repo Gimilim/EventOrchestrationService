@@ -1,36 +1,24 @@
 using EventOrchestrationService.Application.DTOs;
 using EventOrchestrationService.Application.Interfaces;
-using EventOrchestrationService.Entities;
+using EventOrchestrationService.Domain.Entities;
 using FluentValidation;
-using Microsoft.EntityFrameworkCore;
 
 namespace EventOrchestrationService.Application.Services;
 
-public class EventService(IValidator<Event> validator, IEventRepository eventRepository)
+public class EventService(
+    IValidator<CreateEventDto> createValidator,
+    IValidator<UpdateEventDto> updateValidator,
+    IEventRepository eventRepository)
     : IEventService
 {
-    private void Validate(Event eventToValidate)
-    {
-        var result = validator.Validate(eventToValidate);
-        if (!result.IsValid)
-        {
-            throw new ValidationException(result.Errors);
-        }
-    }
-
-    public async Task<PaginatedResult> GetEventsAsync(string? title = null, DateTime? from = null, DateTime? to = null,
+    public async Task<PaginatedResult<Event>> GetEventsAsync(string? title = null, DateTime? from = null,
+        DateTime? to = null,
         int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
-        var query = eventRepository.FilterEvents(title, from, to);
+        var (items, totalCount) = await eventRepository.GetPagedEventsAsync(
+            title, from, to, page, pageSize, cancellationToken);
 
-        var items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-
-        var totalCount = await query.CountAsync(cancellationToken);
-
-        return new PaginatedResult
+        return new PaginatedResult<Event>
         {
             TotalCount = totalCount,
             Items = items,
@@ -44,10 +32,11 @@ public class EventService(IValidator<Event> validator, IEventRepository eventRep
         return await eventRepository.GetByIdAsync(id, cancellationToken);
     }
 
-    public async Task<Event> CreateEventAsync(Event newEvent, CancellationToken cancellationToken)
+    public async Task<Event> CreateEventAsync(CreateEventDto dto, CancellationToken cancellationToken)
     {
-        newEvent.AvailableSeats = newEvent.TotalSeats;
-        Validate(newEvent);
+        await createValidator.ValidateAndThrowAsync(dto, cancellationToken);
+
+        var newEvent = new Event(dto.Title, dto.Description, dto.StartAt, dto.EndAt, dto.TotalSeats);
 
         await eventRepository.AddAsync(newEvent, cancellationToken);
         await eventRepository.SaveChangesAsync(cancellationToken);
@@ -55,9 +44,9 @@ public class EventService(IValidator<Event> validator, IEventRepository eventRep
         return newEvent;
     }
 
-    public async Task<Event?> UpdateEventAsync(int id, Event updatedEvent, CancellationToken cancellationToken)
+    public async Task<Event?> UpdateEventAsync(int id, UpdateEventDto dto, CancellationToken cancellationToken)
     {
-        Validate(updatedEvent);
+        await updateValidator.ValidateAndThrowAsync(dto, cancellationToken);
 
         var existingEvent = await eventRepository.GetByIdAsync(id, cancellationToken);
 
@@ -66,12 +55,13 @@ public class EventService(IValidator<Event> validator, IEventRepository eventRep
             return null;
         }
 
-        existingEvent.Title = updatedEvent.Title;
-        existingEvent.Description = updatedEvent.Description;
-        existingEvent.StartAt = updatedEvent.StartAt;
-        existingEvent.EndAt = updatedEvent.EndAt;
-        existingEvent.TotalSeats = updatedEvent.TotalSeats;
-        existingEvent.AvailableSeats = updatedEvent.AvailableSeats;
+        existingEvent.Update(
+            dto.Title,
+            dto.Description,
+            dto.StartAt,
+            dto.EndAt,
+            dto.TotalSeats
+        );
 
         await eventRepository.SaveChangesAsync(cancellationToken);
 
