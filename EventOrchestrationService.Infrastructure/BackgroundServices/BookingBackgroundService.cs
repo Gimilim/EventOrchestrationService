@@ -1,9 +1,10 @@
-﻿using EventOrchestrationService.Domain.Entities;
-using EventOrchestrationService.Domain.Enums;
-using EventOrchestrationService.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
+﻿using EventOrchestrationService.Application.Interfaces;
+using EventOrchestrationService.Domain.Entities;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
-namespace EventOrchestrationService.BackgroundServices;
+namespace EventOrchestrationService.Infrastructure.BackgroundServices;
 
 public class BookingBackgroundService(
     IServiceScopeFactory scopeFactory,
@@ -19,11 +20,9 @@ public class BookingBackgroundService(
             try
             {
                 using var scope = scopeFactory.CreateScope();
-                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var bookingRepository = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
 
-                var pendingBookings = await dbContext.Bookings
-                    .Where(b => b.Status == BookingStatus.Pending)
-                    .ToListAsync(cancellationToken);
+                var pendingBookings = await bookingRepository.GetPendingBookingsAsync(cancellationToken);
 
                 if (pendingBookings.Count != 0)
                 {
@@ -60,7 +59,7 @@ public class BookingBackgroundService(
             try
             {
                 using var scope = scopeFactory.CreateScope();
-                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var bookingRepository = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
                 var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
                 var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
 
@@ -76,7 +75,7 @@ public class BookingBackgroundService(
                 if (targetEvent == null)
                 {
                     targetBooking.Reject();
-                    await dbContext.SaveChangesAsync(cancellationToken);
+                    await bookingRepository.SaveChangesAsync(cancellationToken);
 
                     logger.LogWarning("Событие с ID = {EventId} не найдено, бронь с ID = {BookingId} отклонена",
                         booking.EventId, booking.Id);
@@ -84,7 +83,7 @@ public class BookingBackgroundService(
                 }
 
                 targetBooking.Confirm();
-                await dbContext.SaveChangesAsync(cancellationToken);
+                await bookingRepository.SaveChangesAsync(cancellationToken);
             }
             finally
             {
@@ -105,7 +104,7 @@ public class BookingBackgroundService(
             try
             {
                 using var scope = scopeFactory.CreateScope();
-                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var bookingRepository = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
                 var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
                 var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
 
@@ -119,10 +118,9 @@ public class BookingBackgroundService(
                     if (targetEvent != null)
                     {
                         targetEvent.ReleaseSeats();
-                        await eventService.UpdateEventAsync(targetEvent.Id, targetEvent, cancellationToken);
                     }
 
-                    await dbContext.SaveChangesAsync(cancellationToken);
+                    await bookingRepository.SaveChangesAsync(cancellationToken);
 
                     logger.LogInformation(
                         "Бронь с ID = {BookingId} отклонена, место возвращено событию с ID = {EventId}",

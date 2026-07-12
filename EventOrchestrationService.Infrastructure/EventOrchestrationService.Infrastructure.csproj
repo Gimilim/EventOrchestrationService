@@ -6,4 +6,24 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+        <ProjectReference
+            Include="..\EventOrchestrationService.Application\EventOrchestrationService.Application.csproj" />
+        <ProjectReference Include="..\EventOrchestrationService.Domain\EventOrchestrationService.Domain.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="Data\Migrations\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
+    </ItemGroup>
+
 </Project>
