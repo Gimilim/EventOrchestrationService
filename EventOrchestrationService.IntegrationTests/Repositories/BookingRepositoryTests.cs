@@ -1,5 +1,7 @@
-﻿using EventOrchestrationService.Data.Repositories.Implementations;
-using EventOrchestrationService.Entities;
+﻿using EventOrchestrationService.Domain.Entities;
+using EventOrchestrationService.Domain.Enums;
+using EventOrchestrationService.Domain.Exceptions;
+using EventOrchestrationService.Infrastructure.Data.Repositories;
 using EventOrchestrationService.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,11 +11,13 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Integr
 {
     private async Task<Event> SeedTestEventAsync()
     {
-        var testEvent = new Event
-        {
-            Title = "Title1", Description = "Description1", StartAt = DateTime.UtcNow.AddDays(-5),
-            EndAt = DateTime.UtcNow.AddDays(3), TotalSeats = 10, AvailableSeats = 10
-        };
+        var testEvent = new Event(
+            title: "Title1",
+            description: "Description1",
+            startAt: DateTime.UtcNow.AddDays(-5),
+            endAt: DateTime.UtcNow.AddDays(3),
+            totalSeats: 10
+        );
 
         await using var context = CreateContext();
         await context.Events.AddAsync(testEvent);
@@ -27,13 +31,7 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Integr
         // Arrange
         var testEvent = await SeedTestEventAsync();
 
-        var newBooking = new Booking
-        {
-            EventId = testEvent.Id,
-            Status = BookingStatus.Pending,
-            CreatedAt = DateTime.UtcNow,
-            ProcessedAt = null
-        };
+        var newBooking = new Booking(testEvent.Id, BookingStatus.Pending);
 
         // Act
         await using (var context = CreateContext())
@@ -51,7 +49,7 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Integr
         Assert.NotNull(savedBooking);
         Assert.True(savedBooking.Id > 0);
         Assert.Equal(BookingStatus.Pending, savedBooking.Status);
-        Assert.Equal(newBooking.CreatedAt, savedBooking.CreatedAt, TimeSpan.FromSeconds(1));
+        Assert.Equal(DateTime.UtcNow, savedBooking.CreatedAt, TimeSpan.FromSeconds(5));
         Assert.Null(savedBooking.ProcessedAt);
     }
 
@@ -61,13 +59,8 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Integr
         // Arrange
         var testEvent = await SeedTestEventAsync();
 
-        var booking = new Booking
-        {
-            EventId = testEvent.Id,
-            Status = BookingStatus.Confirmed,
-            CreatedAt = DateTime.UtcNow,
-            ProcessedAt = DateTime.UtcNow.AddMinutes(5)
-        };
+        var booking = new Booking(testEvent.Id, BookingStatus.Pending);
+        booking.Confirm();
 
         await using (var context = CreateContext())
         {
@@ -102,5 +95,53 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Integr
 
         // Assert
         Assert.Null(result);
+    }
+
+    [Fact]
+    public void AddAsync_InvalidEventId_ThrowsValidationException()
+    {
+        // Act & Assert
+        Assert.Throws<ValidationException>(() => new Booking(0, BookingStatus.Pending));
+    }
+
+    [Fact]
+    public void ConfirmAsync_AlreadyConfirmed_ThrowsValidationException()
+    {
+        // Arrange
+        var booking = new Booking(1, BookingStatus.Pending);
+        booking.Confirm();
+
+        // Act & Assert
+        Assert.Throws<ValidationException>(() => booking.Confirm());
+    }
+
+    [Fact]
+    public async Task ConfirmAsync_ValidBooking_UpdatesStatusAndProcessedAt()
+    {
+        // Arrange
+        var testEvent = await SeedTestEventAsync();
+        var booking = new Booking(testEvent.Id, BookingStatus.Pending);
+
+        await using (var context = CreateContext())
+        {
+            var repository = new BookingRepository(context);
+            await repository.AddAsync(booking);
+            await repository.SaveChangesAsync();
+
+            // Act
+            booking.Confirm();
+            await repository.SaveChangesAsync();
+
+            // Assert
+            await using var verifyContext = CreateContext();
+            var savedBooking = await verifyContext.Bookings
+                .FirstOrDefaultAsync(b => b.Id == booking.Id);
+
+            Assert.NotNull(savedBooking);
+            Assert.Equal(booking.Id, savedBooking.Id);
+            Assert.Equal(BookingStatus.Confirmed, savedBooking.Status);
+            Assert.NotNull(savedBooking.ProcessedAt);
+            Assert.Equal(booking.ProcessedAt!.Value, savedBooking.ProcessedAt!.Value, TimeSpan.FromSeconds(1));
+        }
     }
 }

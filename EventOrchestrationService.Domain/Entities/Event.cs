@@ -38,7 +38,7 @@ public class Event
     public int TotalSeats { get; private set; }
     public int AvailableSeats { get; private set; }
     public ICollection<Booking> Bookings { get; private set; } = new List<Booking>();
-    public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
+    public uint RowVersion { get; private set; }
 
     public bool TryReserveSeats(int count = 1)
     {
@@ -52,6 +52,12 @@ public class Event
 
             return false;
         }
+    }
+
+    public Event(int id, string title, string? description, DateTime startAt, DateTime endAt, int totalSeats)
+        : this(title, description, startAt, endAt, totalSeats)
+    {
+        Id = id;
     }
 
     public bool ReleaseSeats(int count = 1)
