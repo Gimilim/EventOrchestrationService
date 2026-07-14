@@ -56,6 +56,7 @@ public class GlobalExceptionHandlingMiddleware(
             BadRequestException => StatusCodes.Status400BadRequest,
             ValidationException => StatusCodes.Status400BadRequest,
             NoAvailableSeatsException => StatusCodes.Status409Conflict,
+            ConcurrencyException => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status500InternalServerError
         };
     
@@ -66,6 +67,7 @@ public class GlobalExceptionHandlingMiddleware(
             BadRequestException => "Bad Request",
             ValidationException => "Validation Error",
             NoAvailableSeatsException => "No available seats for this even",
+            ConcurrencyException => "Concurrency Conflict",
             _ => "Server Error"
         };
 }

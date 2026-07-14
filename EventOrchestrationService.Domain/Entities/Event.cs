@@ -38,6 +38,7 @@ public class Event
     public int TotalSeats { get; private set; }
     public int AvailableSeats { get; private set; }
     public ICollection<Booking> Bookings { get; private set; } = new List<Booking>();
+    public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
     public bool TryReserveSeats(int count = 1)
     {

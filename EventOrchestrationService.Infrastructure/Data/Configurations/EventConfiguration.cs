@@ -43,5 +43,9 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
             .WithOne(b => b.Event)
             .HasForeignKey(b => b.EventId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(e => e.RowVersion)
+            .IsRowVersion()
+            .HasComment("Версия строки для оптимистической блокировки");
     }
 }

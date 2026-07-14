@@ -1,15 +1,23 @@
 ﻿using EventOrchestrationService.Application.Interfaces;
 using EventOrchestrationService.Domain.Entities;
 using EventOrchestrationService.Domain.Enums;
+using EventOrchestrationService.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventOrchestrationService.Infrastructure.Data.Repositories;
 
-public class BookingRepository(AppDbContext dbContext): IBookingRepository
+public class BookingRepository(AppDbContext dbContext) : IBookingRepository
 {
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConcurrencyException("Данные были изменены другим пользователем. Попробуйте снова.");
+        }
     }
 
     public async Task<Booking?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -21,6 +29,7 @@ public class BookingRepository(AppDbContext dbContext): IBookingRepository
     {
         await dbContext.Bookings.AddAsync(newBooking, cancellationToken);
     }
+
     public async Task<List<Booking>> GetPendingBookingsAsync(CancellationToken cancellationToken = default)
     {
         return await dbContext.Bookings

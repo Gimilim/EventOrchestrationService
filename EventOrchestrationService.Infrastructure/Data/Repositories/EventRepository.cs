@@ -1,5 +1,6 @@
 ﻿using EventOrchestrationService.Application.Interfaces;
 using EventOrchestrationService.Domain.Entities;
+using EventOrchestrationService.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventOrchestrationService.Infrastructure.Data.Repositories;
@@ -18,7 +19,14 @@ public class EventRepository(AppDbContext dbContext) : IEventRepository
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConcurrencyException("Данные были изменены другим пользователем. Попробуйте снова.");
+        }
     }
 
     public async Task AddAsync(Event newEvent, CancellationToken cancellationToken = default)
