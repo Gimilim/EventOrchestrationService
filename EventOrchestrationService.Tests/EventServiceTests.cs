@@ -1,8 +1,10 @@
-using EventOrchestrationService.Data;
-using EventOrchestrationService.Data.Repositories.Implementations;
-using EventOrchestrationService.Entities;
-using EventOrchestrationService.Services.Implementations;
-using EventOrchestrationService.Services.Interfaces;
+using EventOrchestrationService.Application.DTOs;
+using EventOrchestrationService.Application.Interfaces;
+using EventOrchestrationService.Application.Services;
+using EventOrchestrationService.Application.Validators;
+using EventOrchestrationService.Domain.Entities;
+using EventOrchestrationService.Infrastructure.Data;
+using EventOrchestrationService.Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventOrchestrationService.Tests;
@@ -20,7 +22,16 @@ public class EventServiceTests : IDisposable
         _context = new AppDbContext(options);
         _context.Database.OpenConnection();
         _context.Database.EnsureCreated();
-        _service = new EventService(new Event.EventValidator(), new EventRepository(_context));
+
+        var eventRepository = new EventRepository(_context);
+        var createEventValidator = new CreateEventDtoValidator();
+        var updateEventValidator = new UpdateEventDtoValidator();
+
+        _service = new EventService(
+            createEventValidator,
+            updateEventValidator,
+            eventRepository
+        );
     }
 
     public void Dispose()
@@ -31,52 +42,72 @@ public class EventServiceTests : IDisposable
 
     private void SeedDatabase()
     {
+        var baseTime = DateTime.UtcNow;
+
         _context.Events.AddRange(
-            new Event
-            {
-                Id = 1, Title = "Title1", Description = "Description1", StartAt = DateTime.Now.AddDays(-5),
-                EndAt = DateTime.Now.AddDays(3), TotalSeats = 10
-            },
-            new Event
-            {
-                Id = 2, Title = "Title2", Description = "Description2", StartAt = new DateTime(2025, 1, 30),
-                EndAt = new DateTime(2025, 12, 30), TotalSeats = 10
-            },
-            new Event
-            {
-                Id = 3, Title = "Title3", Description = "Description3", StartAt = DateTime.Now.AddDays(-8),
-                EndAt = DateTime.Now.AddDays(5), TotalSeats = 10
-            },
-            new Event
-            {
-                Id = 4, Title = "ABC_Title4", Description = "Description4", StartAt = DateTime.Now.AddDays(-8),
-                EndAt = DateTime.Now.AddDays(5), TotalSeats = 10
-            },
-            new Event
-            {
-                Id = 5, Title = "abc_Title5", Description = "Description5", StartAt = new DateTime(2055, 1, 30),
-                EndAt = DateTime.Now.AddDays(5), TotalSeats = 10
-            },
-            new Event
-            {
-                Id = 6, Title = "AbC_Title6", Description = "Description6", StartAt = new DateTime(2055, 1, 30),
-                EndAt = new DateTime(2077, 12, 30), TotalSeats = 10
-            },
-            new Event
-            {
-                Id = 7, Title = "Title7", Description = "Description7", StartAt = new DateTime(2055, 1, 30),
-                EndAt = new DateTime(2077, 12, 30), TotalSeats = 10
-            },
-            new Event
-            {
-                Id = 8, Title = "Title8", Description = "Description8", StartAt = new DateTime(2025, 1, 30),
-                EndAt = new DateTime(2077, 12, 30), TotalSeats = 10
-            },
-            new Event
-            {
-                Id = 9, Title = "Title9", Description = "Description9", StartAt = new DateTime(2027, 1, 30),
-                EndAt = new DateTime(2027, 12, 30), TotalSeats = 10
-            }
+            new Event(
+                title: "Title1",
+                description: "Description1",
+                startAt: baseTime.AddDays(-5),
+                endAt: baseTime.AddDays(3),
+                totalSeats: 10
+            ),
+            new Event(
+                title: "Title2",
+                description: "Description2",
+                startAt: new DateTime(2025, 1, 30, 0, 0, 0, DateTimeKind.Utc),
+                endAt: new DateTime(2026, 12, 30, 0, 0, 0, DateTimeKind.Utc), // ✅ 2026 > 2025
+                totalSeats: 10
+            ),
+            new Event(
+                title: "Title3",
+                description: "Description3",
+                startAt: baseTime.AddDays(-8),
+                endAt: baseTime.AddDays(5),
+                totalSeats: 10
+            ),
+            new Event(
+                title: "ABC_Title4",
+                description: "Description4",
+                startAt: baseTime.AddDays(-8),
+                endAt: baseTime.AddDays(5),
+                totalSeats: 10
+            ),
+            new Event(
+                title: "abc_Title5",
+                description: "Description5",
+                startAt: new DateTime(2055, 1, 30, 0, 0, 0, DateTimeKind.Utc),
+                endAt: new DateTime(2056, 6, 30, 0, 0, 0, DateTimeKind.Utc), // ✅ 2056 > 2055
+                totalSeats: 10
+            ),
+            new Event(
+                title: "AbC_Title6",
+                description: "Description6",
+                startAt: new DateTime(2055, 1, 30, 0, 0, 0, DateTimeKind.Utc),
+                endAt: new DateTime(2077, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+                totalSeats: 10
+            ),
+            new Event(
+                title: "Title7",
+                description: "Description7",
+                startAt: new DateTime(2055, 1, 30, 0, 0, 0, DateTimeKind.Utc),
+                endAt: new DateTime(2077, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+                totalSeats: 10
+            ),
+            new Event(
+                title: "Title8",
+                description: "Description8",
+                startAt: new DateTime(2025, 1, 30, 0, 0, 0, DateTimeKind.Utc),
+                endAt: new DateTime(2077, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+                totalSeats: 10
+            ),
+            new Event(
+                title: "Title9",
+                description: "Description9",
+                startAt: new DateTime(2027, 1, 30, 0, 0, 0, DateTimeKind.Utc),
+                endAt: new DateTime(2027, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+                totalSeats: 10
+            )
         );
         _context.SaveChanges();
     }
@@ -90,23 +121,23 @@ public class EventServiceTests : IDisposable
     public async Task CreateEventAsync_WithValidData_Success()
     {
         // Arrange
-        var validEventToAdd = new Event
+        var createEventDto = new CreateEventDto
         {
             Title = "testTitle1",
             Description = "testDescription1",
-            StartAt = new DateTime(2099, 12, 30),
-            EndAt = new DateTime(2100, 12, 30),
-            TotalSeats = 10,
+            StartAt = new DateTime(2099, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+            EndAt = new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+            TotalSeats = 10
         };
 
         // Act
-        var result = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
+        var result = await _service.CreateEventAsync(createEventDto, CancellationToken.None);
 
         // Assert
-        Assert.Equal(validEventToAdd.Title, result.Title);
-        Assert.Equal(validEventToAdd.Description, result.Description);
-        Assert.Equal(validEventToAdd.StartAt, result.StartAt);
-        Assert.Equal(validEventToAdd.EndAt, result.EndAt);
+        Assert.Equal(createEventDto.Title, result.Title);
+        Assert.Equal(createEventDto.Description, result.Description);
+        Assert.Equal(createEventDto.StartAt, result.StartAt);
+        Assert.Equal(createEventDto.EndAt, result.EndAt);
     }
 
     /// <summary>
@@ -117,19 +148,19 @@ public class EventServiceTests : IDisposable
     public async Task CreateEventAsync_WithInvalidTotalSeats_ThrowsValidationException()
     {
         // Arrange
-        var invalidEventToAdd = new Event
+        var createEventDto = new CreateEventDto
         {
             Title = "testTitle1",
             Description = "testDescription1",
-            StartAt = new DateTime(2099, 12, 30),
-            EndAt = new DateTime(2100, 12, 30),
-            TotalSeats = -10,
+            StartAt = new DateTime(2099, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+            EndAt = new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+            TotalSeats = -10
         };
 
         // Act & Assert
         await Assert.ThrowsAsync<FluentValidation.ValidationException>(async () =>
         {
-            await _service.CreateEventAsync(invalidEventToAdd, CancellationToken.None);
+            await _service.CreateEventAsync(createEventDto, CancellationToken.None);
         });
     }
 
@@ -168,16 +199,16 @@ public class EventServiceTests : IDisposable
     public async Task GetEventById_WithValidId_ReturnsEvent()
     {
         // Arrange
-        var validEventToAdd = new Event
+        var createEventDto = new CreateEventDto
         {
             Title = "testTitle1",
             Description = "testDescription1",
-            StartAt = new DateTime(2099, 12, 30),
-            EndAt = new DateTime(2100, 12, 30),
+            StartAt = new DateTime(2099, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+            EndAt = new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Utc),
             TotalSeats = 10
         };
 
-        var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
+        var created = await _service.CreateEventAsync(createEventDto, CancellationToken.None);
 
         // Act
         var result = await _service.GetEventByIdAsync(created.Id, CancellationToken.None);
@@ -199,35 +230,35 @@ public class EventServiceTests : IDisposable
     public async Task Update_WithValidData_ReturnsUpdatedEvent()
     {
         // Arrange
-        var validEventToAdd = new Event
+        var createEventDto = new CreateEventDto
         {
             Title = "testTitle1",
             Description = "testDescription1",
-            StartAt = new DateTime(2099, 12, 30),
-            EndAt = new DateTime(2100, 12, 30),
+            StartAt = new DateTime(2099, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+            EndAt = new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Utc),
             TotalSeats = 10
         };
 
-        var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
+        var created = await _service.CreateEventAsync(createEventDto, CancellationToken.None);
 
-        var updateRequestData = new Event
+        var updateDto = new UpdateEventDto
         {
             Title = "updatedTitle2",
             Description = "updatedDescription2",
-            StartAt = new DateTime(2029, 1, 30),
-            EndAt = new DateTime(2029, 12, 30),
+            StartAt = new DateTime(2029, 1, 30, 0, 0, 0, DateTimeKind.Utc),
+            EndAt = new DateTime(2029, 12, 30, 0, 0, 0, DateTimeKind.Utc),
             TotalSeats = 10
         };
 
         // Act
-        var updateResult = await _service.UpdateEventAsync(created.Id, updateRequestData, CancellationToken.None);
+        var updateResult = await _service.UpdateEventAsync(created.Id, updateDto, CancellationToken.None);
 
         // Assert
         Assert.NotNull(updateResult);
-        Assert.Equal(updateRequestData.Title, updateResult.Title);
-        Assert.Equal(updateRequestData.Description, updateResult.Description);
-        Assert.Equal(updateRequestData.StartAt, updateResult.StartAt);
-        Assert.Equal(updateRequestData.EndAt, updateResult.EndAt);
+        Assert.Equal(updateDto.Title, updateResult.Title);
+        Assert.Equal(updateDto.Description, updateResult.Description);
+        Assert.Equal(updateDto.StartAt, updateResult.StartAt);
+        Assert.Equal(updateDto.EndAt, updateResult.EndAt);
     }
 
     /// <summary>
@@ -238,16 +269,16 @@ public class EventServiceTests : IDisposable
     [Fact]
     public async Task Delete_WithValidId_DeleteSuccess()
     {
-        var validEventToAdd = new Event
+        var createEventDto = new CreateEventDto
         {
             Title = "testTitle1",
             Description = "testDescription1",
-            StartAt = new DateTime(2099, 12, 30),
-            EndAt = new DateTime(2100, 12, 30),
+            StartAt = new DateTime(2099, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+            EndAt = new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Utc),
             TotalSeats = 10
         };
 
-        var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
+        var created = await _service.CreateEventAsync(createEventDto, CancellationToken.None);
 
         // Act
         var getEventBeforeDelete = await _service.GetEventByIdAsync(created.Id, CancellationToken.None);
@@ -276,7 +307,7 @@ public class EventServiceTests : IDisposable
 
         // Assert
         Assert.NotNull(getResult);
-        Assert.Equal(expectedIds.Length, getResult.Items.Count);
+        Assert.Equal(expectedIds.Length, getResult.Items.Count());
         Assert.Equal(expectedIds, getResult.Items.Select(e => e.Id));
     }
 
@@ -290,7 +321,7 @@ public class EventServiceTests : IDisposable
         // Arrange
         SeedDatabase();
         var expectedIdsWithFromFilter = new[] { 5, 6, 7 };
-        var expectedIdsWithToFilter = new[] { 1, 2, 3, 4, 5, 9 };
+        var expectedIdsWithToFilter = new[] { 1, 2, 3, 4, 9 };
 
         // Act
         var getResultWithFromFilter = await _service.GetEventsAsync(from: new DateTime(2055, 1, 1));
@@ -362,7 +393,7 @@ public class EventServiceTests : IDisposable
     {
         // Arrange
         SeedDatabase();
-        var expectedIds = new[] { 4, 5 };
+        var expectedIds = new[] { 4 };
 
         // Act
         var getResult = await _service.GetEventsAsync(
@@ -402,88 +433,142 @@ public class EventServiceTests : IDisposable
         // Arrange
         const int wrongId = 100;
 
-        var updateRequestData = new Event
+        var updateDto = new UpdateEventDto
         {
             Title = "updatedTitle2",
             Description = "updatedDescription2",
-            StartAt = new DateTime(2029, 1, 30),
-            EndAt = new DateTime(2029, 12, 30),
+            StartAt = new DateTime(2029, 1, 30, 0, 0, 0, DateTimeKind.Utc),
+            EndAt = new DateTime(2029, 12, 30, 0, 0, 0, DateTimeKind.Utc),
             TotalSeats = 10
         };
 
         // Act
-        var result = await _service.UpdateEventAsync(wrongId, updateRequestData, CancellationToken.None);
+        var result = await _service.UpdateEventAsync(wrongId, updateDto, CancellationToken.None);
 
         // Assert
         Assert.Null(result);
     }
 
     /// <summary>
-    /// Обновление события по его id
-    /// Проверяем, что при обновлении события каждое его поля корректно перезаписывается
+    /// Создание события с валидными данными
+    /// Проверяем, что AvailableSeats устанавливается равным TotalSeats
     /// </summary>
     [Fact]
-    public async Task UpdateEventAsync_WithValidData_ReturnsUpdatedEvent()
+    public async Task CreateEventAsync_WithValidData_SetsAvailableSeatsEqualToTotalSeats()
     {
         // Arrange
-        var validEventToAdd = new Event
+        var createEventDto = new CreateEventDto
         {
             Title = "testTitle1",
             Description = "testDescription1",
-            StartAt = new DateTime(2099, 12, 30),
-            EndAt = new DateTime(2100, 12, 30),
+            StartAt = new DateTime(2099, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+            EndAt = new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Utc),
             TotalSeats = 10
         };
 
-        var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
-
-        var updateRequestData = new Event
-        {
-            Title = "updatedTitle2",
-            Description = "updatedDescription2",
-            StartAt = new DateTime(2029, 1, 30),
-            EndAt = new DateTime(2029, 12, 30),
-            TotalSeats = 20,
-            AvailableSeats = 20
-        };
-
         // Act
-        var updateResult = await _service.UpdateEventAsync(created.Id, updateRequestData, CancellationToken.None);
+        var result = await _service.CreateEventAsync(createEventDto, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(updateResult);
-        Assert.Equal(updateRequestData.Title, updateResult.Title);
-        Assert.Equal(updateRequestData.Description, updateResult.Description);
-        Assert.Equal(updateRequestData.StartAt, updateResult.StartAt);
-        Assert.Equal(updateRequestData.EndAt, updateResult.EndAt);
-        Assert.Equal(updateRequestData.TotalSeats, updateResult.TotalSeats);
-        Assert.Equal(updateRequestData.AvailableSeats, updateResult.AvailableSeats);
+        Assert.Equal(createEventDto.TotalSeats, result.AvailableSeats);
     }
 
     /// <summary>
-    /// Получение события по id
-    /// Проверяем, что при запросе конкретного события получаем именно его
+    /// Обновление события с частичными данными (только Title)
+    /// Проверяем, что остальные поля остаются без изменений
     /// </summary>
     [Fact]
-    public async Task GetEventByIdAsync_WithValidId_ReturnsEvent()
+    public async Task Update_WithPartialData_UpdatesOnlySpecifiedFields()
     {
         // Arrange
-        var validEventToAdd = new Event
+        var createDto = new CreateEventDto
         {
-            Title = "testTitle1",
-            Description = "testDescription1",
-            StartAt = new DateTime(2099, 12, 30),
-            EndAt = new DateTime(2100, 12, 30),
+            Title = "Original Title",
+            Description = "Original Description",
+            StartAt = new DateTime(2099, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+            EndAt = new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Utc),
             TotalSeats = 10
         };
 
-        var created = await _service.CreateEventAsync(validEventToAdd, CancellationToken.None);
+        var created = await _service.CreateEventAsync(createDto, CancellationToken.None);
+
+        var updateDto = new UpdateEventDto
+        {
+            Title = "New Title"
+        };
 
         // Act
-        var result = await _service.GetEventByIdAsync(created.Id, CancellationToken.None);
+        var updateResult = await _service.UpdateEventAsync(created.Id, updateDto, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(created.Id, result.Id);
+        Assert.NotNull(updateResult);
+        Assert.Equal("New Title", updateResult.Title);
+        Assert.Equal(createDto.Description, updateResult.Description);
+        Assert.Equal(createDto.StartAt, updateResult.StartAt);
+        Assert.Equal(createDto.EndAt, updateResult.EndAt);
+        Assert.Equal(createDto.TotalSeats, updateResult.TotalSeats);
+    }
+
+    /// <summary>
+    /// Обновление события с EndAt меньше или равно StartAt
+    /// Проверяем, что выбрасывается ValidationException
+    /// </summary>
+    [Fact]
+    public async Task Update_WithInvalidDates_ThrowsValidationException()
+    {
+        // Arrange
+        var createDto = new CreateEventDto
+        {
+            Title = "testTitle1",
+            Description = "testDescription1",
+            StartAt = new DateTime(2099, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+            EndAt = new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+            TotalSeats = 10
+        };
+
+        var created = await _service.CreateEventAsync(createDto, CancellationToken.None);
+
+        var updateDto = new UpdateEventDto
+        {
+            Title = "New Title",
+            StartAt = new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+            EndAt = new DateTime(2099, 12, 30, 0, 0, 0, DateTimeKind.Utc)
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<FluentValidation.ValidationException>(() =>
+            _service.UpdateEventAsync(created.Id, updateDto, CancellationToken.None)
+        );
+    }
+
+    /// <summary>
+    /// Обновление события с TotalSeats меньше или равно 0
+    /// Проверяем, что выбрасывается ValidationException
+    /// </summary>
+    [Fact]
+    public async Task Update_WithInvalidTotalSeats_ThrowsValidationException()
+    {
+        // Arrange
+        var createDto = new CreateEventDto
+        {
+            Title = "testTitle1",
+            Description = "testDescription1",
+            StartAt = new DateTime(2099, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+            EndAt = new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Utc),
+            TotalSeats = 10
+        };
+
+        var created = await _service.CreateEventAsync(createDto, CancellationToken.None);
+
+        var updateDto = new UpdateEventDto
+        {
+            Title = "New Title",
+            TotalSeats = -5
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<FluentValidation.ValidationException>(() =>
+            _service.UpdateEventAsync(created.Id, updateDto, CancellationToken.None)
+        );
     }
 }
