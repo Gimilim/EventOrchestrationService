@@ -37,6 +37,9 @@ public class Booking
 
     public void Reject()
     {
+        if (Status == BookingStatus.Rejected)
+            throw new ValidationException("Бронь уже отклонена");
+
         Status = BookingStatus.Rejected;
         ProcessedAt = DateTime.UtcNow;
     }
