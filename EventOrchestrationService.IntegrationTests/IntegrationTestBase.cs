@@ -1,4 +1,4 @@
-﻿using EventOrchestrationService.Data;
+﻿using EventOrchestrationService.Infrastructure.Data;
 using EventOrchestrationService.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -33,6 +33,8 @@ public abstract class IntegrationTestBase : IAsyncLifetime
         await using var context = CreateContext();
         await context.Database.EnsureDeletedAsync();
         await context.Database.MigrateAsync();
+
+        await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE \"Events\" RESTART IDENTITY CASCADE;");
     }
 
     public async Task InitializeAsync()

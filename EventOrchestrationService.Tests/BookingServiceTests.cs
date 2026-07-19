@@ -1,9 +1,12 @@
-﻿using EventOrchestrationService.Data;
-using EventOrchestrationService.Data.Repositories.Implementations;
-using EventOrchestrationService.Entities;
-using EventOrchestrationService.Exceptions;
-using EventOrchestrationService.Services.Implementations;
-using EventOrchestrationService.Services.Interfaces;
+﻿using EventOrchestrationService.Application.DTOs;
+using EventOrchestrationService.Application.Interfaces;
+using EventOrchestrationService.Application.Services;
+using EventOrchestrationService.Application.Validators;
+using EventOrchestrationService.Domain.Entities;
+using EventOrchestrationService.Domain.Enums;
+using EventOrchestrationService.Domain.Exceptions;
+using EventOrchestrationService.Infrastructure.Data;
+using EventOrchestrationService.Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventOrchestrationService.Tests;
@@ -22,8 +25,24 @@ public class BookingServiceTests : IDisposable
         _context = new AppDbContext(options);
         _context.Database.OpenConnection();
         _context.Database.EnsureCreated();
-        _eventService = new EventService(new Event.EventValidator(), new EventRepository(_context));
-        _service = new BookingService(_eventService,  new BookingRepository(_context));
+
+        var eventRepository = new EventRepository(_context);
+        var bookingRepository = new BookingRepository(_context);
+
+        var createEventValidator = new CreateEventDtoValidator();
+        var updateEventValidator = new UpdateEventDtoValidator();
+
+        // Создаем сервисы
+        _eventService = new EventService(
+            createEventValidator,
+            updateEventValidator,
+            eventRepository
+        );
+
+        _service = new BookingService(
+            _eventService,
+            bookingRepository
+        );
     }
 
     public void Dispose()
@@ -34,27 +53,37 @@ public class BookingServiceTests : IDisposable
 
     private void SeedEvents()
     {
+        var baseTime = DateTime.UtcNow;
+
         _context.Events.AddRange(
-            new Event
-            {
-                Id = 1, Title = "Title1", Description = "Description1", StartAt = DateTime.UtcNow.AddDays(-5),
-                EndAt = DateTime.UtcNow.AddDays(5), TotalSeats = 10, AvailableSeats = 10
-            },
-            new Event
-            {
-                Id = 2, Title = "Title2", Description = "Description2", StartAt = DateTime.UtcNow.AddDays(-5),
-                EndAt = DateTime.UtcNow.AddDays(5), TotalSeats = 10, AvailableSeats = 10
-            },
-            new Event
-            {
-                Id = 3, Title = "OverbookingTest", Description = "Test Description", StartAt = DateTime.UtcNow.AddDays(1),
-                EndAt = DateTime.UtcNow.AddDays(2), TotalSeats = 5, AvailableSeats = 5
-            },
-            new Event
-            {
-                Id = 4, Title = "UniqueIdTest", Description = "Test for unique IDs",  StartAt = DateTime.UtcNow.AddDays(1),
-                EndAt = DateTime.UtcNow.AddDays(2), TotalSeats = 10, AvailableSeats = 10
-            }
+            new Event(
+                title: "Title1",
+                description: "Description1",
+                startAt: baseTime.AddDays(-5),
+                endAt: baseTime.AddDays(5),
+                totalSeats: 10
+            ),
+            new Event(
+                title: "Title2",
+                description: "Description2",
+                startAt: baseTime.AddDays(-5),
+                endAt: baseTime.AddDays(5),
+                totalSeats: 10
+            ),
+            new Event(
+                title: "OverbookingTest",
+                description: "Test Description",
+                startAt: baseTime.AddDays(1),
+                endAt: baseTime.AddDays(2),
+                totalSeats: 5
+            ),
+            new Event(
+                title: "UniqueIdTest",
+                description: "Test for unique IDs",
+                startAt: baseTime.AddDays(1),
+                endAt: baseTime.AddDays(2),
+                totalSeats: 10
+            )
         );
         _context.SaveChanges();
     }
@@ -64,17 +93,18 @@ public class BookingServiceTests : IDisposable
     /// </summary>
     private async Task<Event> CreateTestEvent(int totalSeats, CancellationToken cancellationToken)
     {
-        var testEvent = new Event
+        var baseTime = DateTime.UtcNow;
+
+        var createEventDto = new CreateEventDto
         {
             Title = "TestEvent",
             Description = "Test Description",
-            StartAt = DateTime.UtcNow.AddDays(1),
-            EndAt = DateTime.UtcNow.AddDays(2),
-            TotalSeats = totalSeats,
-            AvailableSeats = totalSeats
+            StartAt = baseTime.AddDays(1),
+            EndAt = baseTime.AddDays(2),
+            TotalSeats = totalSeats
         };
 
-        return await _eventService.CreateEventAsync(testEvent, cancellationToken);
+        return await _eventService.CreateEventAsync(createEventDto, cancellationToken);
     }
 
     /// <summary>
@@ -156,10 +186,9 @@ public class BookingServiceTests : IDisposable
         SeedEvents();
         var createdBooking = await _service.CreateBookingAsync(1, CancellationToken.None);
 
-        // Имитируем фоновую обработку -- меняем статус напрямую в БД
+        // Имитируем фоновую обработку -- меняем статус через доменный метод
         var dbBooking = await _context.Bookings.FindAsync(createdBooking.Id);
-        dbBooking!.Status = BookingStatus.Confirmed;
-        dbBooking.ProcessedAt = DateTime.UtcNow;
+        dbBooking!.Confirm();
         await _context.SaveChangesAsync();
 
         // Act
@@ -182,8 +211,8 @@ public class BookingServiceTests : IDisposable
         const int nonExistingEventId = 999;
 
         // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(
-            () => _service.CreateBookingAsync(nonExistingEventId, CancellationToken.None)
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.CreateBookingAsync(nonExistingEventId, CancellationToken.None)
         );
     }
 
@@ -197,17 +226,16 @@ public class BookingServiceTests : IDisposable
         // Arrange
         SeedEvents();
 
-        var eventService = new EventService(new Event.EventValidator(), new EventRepository(_context));
-        await eventService.DeleteEventAsync(2, CancellationToken.None);
+        // Используем существующий _eventService вместо создания нового
+        await _eventService.DeleteEventAsync(2, CancellationToken.None);
 
         // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(
-            () => _service.CreateBookingAsync(2, CancellationToken.None)
+        await Assert.ThrowsAsync<NotFoundException>(() => _service.CreateBookingAsync(2, CancellationToken.None)
         );
     }
 
     /// <summary>
-    /// Получение брони по несуществующему Id
+    /// Получение брони по-несуществующему Id
     /// Проверяем, что возвращается null
     /// </summary>
     [Fact]
@@ -265,8 +293,8 @@ public class BookingServiceTests : IDisposable
         }
 
         // Act & Assert
-        await Assert.ThrowsAsync<NoAvailableSeatsException>(
-            () => _service.CreateBookingAsync(eventId, CancellationToken.None)
+        await Assert.ThrowsAsync<NoAvailableSeatsException>(() =>
+            _service.CreateBookingAsync(eventId, CancellationToken.None)
         );
     }
 
@@ -281,8 +309,7 @@ public class BookingServiceTests : IDisposable
         var booking = await _service.CreateBookingAsync(1, CancellationToken.None);
 
         // Act
-        booking.Status = BookingStatus.Confirmed;
-        booking.ProcessedAt = DateTime.UtcNow;
+        booking.Confirm();
 
         // Assert
         Assert.Equal(BookingStatus.Confirmed, booking.Status);
@@ -300,8 +327,7 @@ public class BookingServiceTests : IDisposable
         var booking = await _service.CreateBookingAsync(1, CancellationToken.None);
 
         // Act
-        booking.Status = BookingStatus.Rejected;
-        booking.ProcessedAt = DateTime.UtcNow;
+        booking.Reject();
 
         // Assert
         Assert.Equal(BookingStatus.Rejected, booking.Status);
@@ -328,7 +354,16 @@ public class BookingServiceTests : IDisposable
         // Act
         var targetEvent = await _eventService.GetEventByIdAsync(eventId, CancellationToken.None);
         targetEvent!.ReleaseSeats();
-        await _eventService.UpdateEventAsync(eventId, targetEvent, CancellationToken.None);
+
+        var updateDto = new UpdateEventDto
+        {
+            Title = targetEvent.Title,
+            Description = targetEvent.Description,
+            StartAt = targetEvent.StartAt,
+            EndAt = targetEvent.EndAt,
+            TotalSeats = targetEvent.TotalSeats
+        };
+        await _eventService.UpdateEventAsync(eventId, updateDto, CancellationToken.None);
 
         // Assert
         var eventAfterRelease = await _eventService.GetEventByIdAsync(eventId, CancellationToken.None);
@@ -350,7 +385,16 @@ public class BookingServiceTests : IDisposable
         var booking = await _service.CreateBookingAsync(eventId, CancellationToken.None);
 
         targetEvent.ReleaseSeats();
-        await _eventService.UpdateEventAsync(eventId, targetEvent, CancellationToken.None);
+
+        var updateDto = new UpdateEventDto
+        {
+            Title = targetEvent.Title,
+            Description = targetEvent.Description,
+            StartAt = targetEvent.StartAt,
+            EndAt = targetEvent.EndAt,
+            TotalSeats = targetEvent.TotalSeats
+        };
+        await _eventService.UpdateEventAsync(eventId, updateDto, CancellationToken.None);
 
         // Act
         var newBooking = await _service.CreateBookingAsync(eventId, CancellationToken.None);
@@ -436,5 +480,61 @@ public class BookingServiceTests : IDisposable
 
         var finalEvent = await _eventService.GetEventByIdAsync(eventId, CancellationToken.None);
         Assert.Equal(0, finalEvent!.AvailableSeats);
+    }
+
+    /// <summary>
+    /// Проверка, что повторное подтверждение уже подтвержденной брони выбрасывает исключение
+    /// </summary>
+    [Fact]
+    public void ConfirmAsync_AlreadyConfirmed_ThrowsValidationException()
+    {
+        // Arrange
+        var booking = new Booking(1, BookingStatus.Pending);
+        booking.Confirm();
+
+        // Act & Assert
+        Assert.Throws<ValidationException>(() => booking.Confirm());
+    }
+
+    /// <summary>
+    /// Проверка, что повторное отклонение уже отклоненной брони выбрасывает исключение
+    /// </summary>
+    [Fact]
+    public void RejectAsync_AlreadyRejected_ThrowsValidationException()
+    {
+        // Arrange
+        var booking = new Booking(1, BookingStatus.Pending);
+        booking.Reject();
+
+        // Act & Assert
+        Assert.Throws<ValidationException>(() => booking.Reject());
+    }
+
+    /// <summary>
+    /// Проверка, что Reject() для брони в статусе Pending корректно меняет статус и заполняет ProcessedAt
+    /// </summary>
+    [Fact]
+    public async Task RejectAsync_ValidBooking_UpdatesStatusAndProcessedAt()
+    {
+        // Arrange
+        SeedEvents();
+        var booking = await _service.CreateBookingAsync(1, CancellationToken.None);
+
+        // Act
+        booking.Reject();
+
+        // Assert
+        Assert.Equal(BookingStatus.Rejected, booking.Status);
+        Assert.NotNull(booking.ProcessedAt);
+    }
+
+    /// <summary>
+    /// Проверка, что бронь не может быть создана с невалидным EventId (меньше или равно 0)
+    /// </summary>
+    [Fact]
+    public void CreateBooking_WithInvalidEventId_ThrowsValidationException()
+    {
+        // Act & Assert
+        Assert.Throws<ValidationException>(() => new Booking(0, BookingStatus.Pending));
     }
 }

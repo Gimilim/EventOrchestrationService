@@ -27,7 +27,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\EventOrchestrationService\EventOrchestrationService.csproj" />
+        <ProjectReference Include="..\EventOrchestrationService.Domain\EventOrchestrationService.Domain.csproj" />
+        <ProjectReference Include="..\EventOrchestrationService.Application\EventOrchestrationService.Application.csproj" />
+        <ProjectReference Include="..\EventOrchestrationService.Infrastructure\EventOrchestrationService.Infrastructure.csproj" />
     </ItemGroup>
 
 </Project>
