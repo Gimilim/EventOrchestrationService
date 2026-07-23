@@ -31,6 +31,7 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
                         1 - В обработке (Pending)
                         2 - Подтверждено (Confirmed)
                         3 - Отклонено (Rejected)
+                        3 - Отменено (Cancelled)
                         """);
 
 
