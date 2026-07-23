@@ -18,5 +18,6 @@ public class User
     public int Id { get; private set; }
     public string Login { get; private set; }
     public string PasswordHash { get; private set; }
-    public Role Role { get; private set; } 
+    public Role Role { get; private set; }
+    public ICollection<Booking> Bookings { get; private set; } = new List<Booking>();
 }
