@@ -59,6 +59,7 @@ public class GlobalExceptionHandlingMiddleware(
             ConcurrencyException => StatusCodes.Status409Conflict,
             UnauthorizedException => StatusCodes.Status401Unauthorized,
             EventAlreadyStartedException => StatusCodes.Status400BadRequest,
+            BookingLimitExceededException =>  StatusCodes.Status409Conflict,
             _ => StatusCodes.Status500InternalServerError
         };
     
@@ -72,6 +73,7 @@ public class GlobalExceptionHandlingMiddleware(
             ConcurrencyException => "Concurrency Conflict",
             UnauthorizedException => "Unauthorized",
             EventAlreadyStartedException => "Event already started",
+            BookingLimitExceededException => "Booking limit exceeded",
             _ => "Server Error"
         };
 }

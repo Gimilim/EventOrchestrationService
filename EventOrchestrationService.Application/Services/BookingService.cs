@@ -1,16 +1,21 @@
 ﻿using EventOrchestrationService.Application.Interfaces;
+using EventOrchestrationService.Application.Settings;
 using EventOrchestrationService.Domain.Entities;
 using EventOrchestrationService.Domain.Enums;
 using EventOrchestrationService.Domain.Exceptions;
+using Microsoft.Extensions.Options;
 
 namespace EventOrchestrationService.Application.Services;
 
 public class BookingService(
     IEventService eventService,
-    IBookingRepository bookingRepository) : IBookingService
+    IBookingRepository bookingRepository,
+    IOptions<BookingSettings> settings) : IBookingService
 {
     public async Task<Booking> CreateBookingAsync(int eventId, int userId, CancellationToken cancellationToken)
     {
+        await EnsureUserCanBookAsync(userId, cancellationToken);
+
         var targetEvent = await eventService.GetEventByIdAsync(eventId, cancellationToken);
 
         if (targetEvent == null)
@@ -36,6 +41,14 @@ public class BookingService(
         await bookingRepository.SaveChangesAsync(cancellationToken);
 
         return createdBooking;
+    }
+
+    private async Task EnsureUserCanBookAsync(int userId, CancellationToken cancellationToken)
+    {
+        var currentBookings = await bookingRepository.CountBookingsByUserIdAsync(userId, cancellationToken);
+        var maxBookingsPerUser = settings.Value.MaxBookingsPerUser;
+        if (currentBookings >= maxBookingsPerUser)
+            throw new BookingLimitExceededException($"Пользователь с ID {userId} превысил лимит бронирований ({maxBookingsPerUser})");
     }
 
     public async Task<Booking?> GetBookingByIdAsync(int bookingId, CancellationToken cancellationToken)
