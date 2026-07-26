@@ -26,7 +26,7 @@ public class EventController(IEventService eventService, IBookingService booking
 
         if (string.IsNullOrEmpty(userIdClaim))
             throw new UnauthorizedException("ИД пользователя не найден в токене.");
-        
+
         if (!int.TryParse(userIdClaim, out var userId))
             throw new UnauthorizedException("Неверный формат ИД.");
 
@@ -54,7 +54,8 @@ public class EventController(IEventService eventService, IBookingService booking
     /// </returns>
     /// <response code="200">Успешный возврат пагинированного списка</response>
     [HttpGet]
-    public async Task<IActionResult> GetEvents(string? title, DateTime? from, DateTime? to, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetEvents(string? title, DateTime? from, DateTime? to, int page = 1,
+        int pageSize = 10, CancellationToken cancellationToken = default)
     {
         return Ok(await eventService.GetEventsAsync(title, from, to, page, pageSize, cancellationToken));
     }
@@ -85,7 +86,7 @@ public class EventController(IEventService eventService, IBookingService booking
     /// <param name="cancellationToken">Токен отмены.</param>
     /// <returns>Созданное событие.</returns>
     [HttpPost]
-    public async Task <IActionResult> Create([FromBody] CreateEventDto newEvent, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateEventDto newEvent, CancellationToken cancellationToken)
     {
         var createdEvent = await eventService.CreateEventAsync(newEvent, cancellationToken);
         return CreatedAtAction(nameof(GetEventById), new { id = createdEvent.Id }, createdEvent);
@@ -99,7 +100,8 @@ public class EventController(IEventService eventService, IBookingService booking
     /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Обновлённое событие.</returns>
     [HttpPut("{id:int}")]
-    public async Task <IActionResult> Update(int id, [FromBody] UpdateEventDto updateEventRequest, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateEventDto updateEventRequest,
+        CancellationToken cancellationToken)
     {
         var updatedEventResult = await eventService.UpdateEventAsync(id, updateEventRequest, cancellationToken);
 
@@ -118,7 +120,7 @@ public class EventController(IEventService eventService, IBookingService booking
     /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Статус удаления.</returns>
     [HttpDelete("{id:int}")]
-    public async Task <IActionResult>  Delete(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var deleteResult = await eventService.DeleteEventAsync(id, cancellationToken);
 

@@ -58,6 +58,7 @@ public class GlobalExceptionHandlingMiddleware(
             NoAvailableSeatsException => StatusCodes.Status409Conflict,
             ConcurrencyException => StatusCodes.Status409Conflict,
             UnauthorizedException => StatusCodes.Status401Unauthorized,
+            EventAlreadyStartedException => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status500InternalServerError
         };
     
@@ -70,6 +71,7 @@ public class GlobalExceptionHandlingMiddleware(
             NoAvailableSeatsException => "No available seats for this even",
             ConcurrencyException => "Concurrency Conflict",
             UnauthorizedException => "Unauthorized",
+            EventAlreadyStartedException => "Event already started",
             _ => "Server Error"
         };
 }

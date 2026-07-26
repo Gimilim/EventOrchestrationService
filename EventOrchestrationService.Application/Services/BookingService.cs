@@ -16,8 +16,19 @@ public class BookingService(
         if (targetEvent == null)
             throw new NotFoundException($"Событие с ID {eventId} не найдено");
 
-        if (!targetEvent.TryReserveSeats())
-            throw new NoAvailableSeatsException($"На событие с ID {eventId} нет свободных мест");
+        var reserveResult = targetEvent.TryReserveSeats();
+
+        switch (reserveResult)
+        {
+            case ReservationResult.Success:
+                break;
+            case ReservationResult.EventAlreadyStarted:
+                throw new EventAlreadyStartedException($"Событие с ID {eventId} уже началось");
+            case ReservationResult.NoAvailableSeats:
+                throw new NoAvailableSeatsException($"На событие с ID {eventId} нет свободных мест");
+            default:
+                throw new InvalidOperationException("Неизвестная ошибка бронирования");
+        }
 
         var createdBooking = new Booking(eventId, userId, BookingStatus.Pending);
 
