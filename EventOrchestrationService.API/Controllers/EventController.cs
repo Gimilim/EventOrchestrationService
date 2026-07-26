@@ -1,12 +1,15 @@
-﻿using EventOrchestrationService.Application.DTOs;
+﻿using System.Security.Claims;
+using EventOrchestrationService.Application.DTOs;
 using EventOrchestrationService.Application.Interfaces;
 using EventOrchestrationService.Domain.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventOrchestrationService.API.Controllers;
 
 [ApiController]
 [Route("events")]
+[Authorize]
 public class EventController(IEventService eventService, IBookingService bookingService)
     : ControllerBase
 {
@@ -19,7 +22,15 @@ public class EventController(IEventService eventService, IBookingService booking
     [HttpPost("{id:int}/book")]
     public async Task<IActionResult> CreateBooking(int id, CancellationToken cancellationToken)
     {
-        var booking = await bookingService.CreateBookingAsync(id, cancellationToken);
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim))
+            throw new UnauthorizedException("ИД пользователя не найден в токене.");
+        
+        if (!int.TryParse(userIdClaim, out var userId))
+            throw new UnauthorizedException("Неверный формат ИД.");
+
+        var booking = await bookingService.CreateBookingAsync(id, userId, cancellationToken);
 
         Response.Headers.Location = $"/bookings/{booking.Id}";
         return Accepted(new { booking.Id, booking.Status, booking.EventId });

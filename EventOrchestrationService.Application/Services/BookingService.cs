@@ -9,7 +9,7 @@ public class BookingService(
     IEventService eventService,
     IBookingRepository bookingRepository) : IBookingService
 {
-    public async Task<Booking> CreateBookingAsync(int eventId, CancellationToken cancellationToken)
+    public async Task<Booking> CreateBookingAsync(int eventId, int userId, CancellationToken cancellationToken)
     {
         var targetEvent = await eventService.GetEventByIdAsync(eventId, cancellationToken);
 
@@ -19,7 +19,7 @@ public class BookingService(
         if (!targetEvent.TryReserveSeats())
             throw new NoAvailableSeatsException($"На событие с ID {eventId} нет свободных мест");
 
-        var createdBooking = new Booking(eventId, BookingStatus.Pending);
+        var createdBooking = new Booking(eventId, userId, BookingStatus.Pending);
 
         await bookingRepository.AddAsync(createdBooking, cancellationToken);
         await bookingRepository.SaveChangesAsync(cancellationToken);
