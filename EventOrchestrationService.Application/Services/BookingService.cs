@@ -48,11 +48,28 @@ public class BookingService(
         var currentBookings = await bookingRepository.CountBookingsByUserIdAsync(userId, cancellationToken);
         var maxBookingsPerUser = settings.Value.MaxBookingsPerUser;
         if (currentBookings >= maxBookingsPerUser)
-            throw new BookingLimitExceededException($"Пользователь с ID {userId} превысил лимит бронирований ({maxBookingsPerUser})");
+            throw new BookingLimitExceededException(
+                $"Пользователь с ID {userId} превысил лимит бронирований ({maxBookingsPerUser})");
     }
 
     public async Task<Booking?> GetBookingByIdAsync(int bookingId, CancellationToken cancellationToken)
     {
         return await bookingRepository.GetByIdAsync(bookingId, cancellationToken);
+    }
+
+    public async Task CancelBookingAsync(int bookingId, int userId, bool skipCanselPermission,
+        CancellationToken cancellationToken)
+    {
+        var targetBooking = await bookingRepository.GetByIdAsync(bookingId, cancellationToken);
+
+        if (targetBooking is null)
+            throw new NotFoundException($"Бронирование с ID {bookingId} не найдено");
+
+        if (!skipCanselPermission && targetBooking.UserId != userId)
+            throw new AccessDeniedException("Можно отменить только свое бронирование.");
+
+        targetBooking.Cancel();
+
+        await bookingRepository.SaveChangesAsync(cancellationToken);
     }
 }

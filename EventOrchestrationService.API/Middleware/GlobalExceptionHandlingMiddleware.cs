@@ -59,10 +59,11 @@ public class GlobalExceptionHandlingMiddleware(
             ConcurrencyException => StatusCodes.Status409Conflict,
             UnauthorizedException => StatusCodes.Status401Unauthorized,
             EventAlreadyStartedException => StatusCodes.Status400BadRequest,
-            BookingLimitExceededException =>  StatusCodes.Status409Conflict,
+            BookingLimitExceededException => StatusCodes.Status409Conflict,
+            AccessDeniedException => StatusCodes.Status403Forbidden,
             _ => StatusCodes.Status500InternalServerError
         };
-    
+
     private static string GetTitle(Exception ex)
         => ex switch
         {
@@ -74,6 +75,7 @@ public class GlobalExceptionHandlingMiddleware(
             UnauthorizedException => "Unauthorized",
             EventAlreadyStartedException => "Event already started",
             BookingLimitExceededException => "Booking limit exceeded",
+            AccessDeniedException => "Access denied",
             _ => "Server Error"
         };
 }
