@@ -30,7 +30,7 @@ public class JwtService(IOptions<JwtSettings> options) : IJwtService
         var descriptor = new SecurityTokenDescriptor
         {
             Issuer = _settings.Issuer,
-            Audience = _settings. Audience,
+            Audience = _settings.Audience,
             Claims = claims,
             NotBefore = DateTime.UtcNow,
             Expires = DateTime.UtcNow.AddMinutes(_settings.ExpiryMinutes),
