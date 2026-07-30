@@ -1,12 +1,14 @@
 ﻿using EventOrchestrationService.Application.Interfaces;
 using EventOrchestrationService.Domain.Enums;
 using EventOrchestrationService.Domain.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventOrchestrationService.API.Controllers;
 
 [ApiController]
 [Route("bookings")]
+[Authorize]
 public class BookingController(IBookingService bookingService) : ApiControllerBase
 {
     /// <summary>

@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using EventOrchestrationService.Application.DTOs;
 using EventOrchestrationService.Application.Interfaces;
+using EventOrchestrationService.Domain.Enums;
 using EventOrchestrationService.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -48,6 +49,7 @@ public class EventController(IEventService eventService, IBookingService booking
     /// </returns>
     /// <response code="200">Успешный возврат пагинированного списка</response>
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> GetEvents(string? title, DateTime? from, DateTime? to, int page = 1,
         int pageSize = 10, CancellationToken cancellationToken = default)
     {
@@ -61,6 +63,7 @@ public class EventController(IEventService eventService, IBookingService booking
     /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Событие с указанным ID.</returns>
     [HttpGet("{id:int}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetEventById(int id, CancellationToken cancellationToken)
     {
         var targetEvent = await eventService.GetEventByIdAsync(id, cancellationToken);
@@ -80,6 +83,7 @@ public class EventController(IEventService eventService, IBookingService booking
     /// <param name="cancellationToken">Токен отмены.</param>
     /// <returns>Созданное событие.</returns>
     [HttpPost]
+    [Authorize(Roles = nameof(Role.Admin))]
     public async Task<IActionResult> Create([FromBody] CreateEventDto newEvent, CancellationToken cancellationToken)
     {
         var createdEvent = await eventService.CreateEventAsync(newEvent, cancellationToken);
@@ -94,6 +98,7 @@ public class EventController(IEventService eventService, IBookingService booking
     /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Обновлённое событие.</returns>
     [HttpPut("{id:int}")]
+    [Authorize(Roles = nameof(Role.Admin))]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateEventDto updateEventRequest,
         CancellationToken cancellationToken)
     {
@@ -114,6 +119,7 @@ public class EventController(IEventService eventService, IBookingService booking
     /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Статус удаления.</returns>
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = nameof(Role.Admin))]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var deleteResult = await eventService.DeleteEventAsync(id, cancellationToken);

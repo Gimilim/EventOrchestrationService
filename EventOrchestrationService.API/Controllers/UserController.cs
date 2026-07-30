@@ -18,7 +18,7 @@ public class UserController(IUserService userService) : ControllerBase
     public async Task<IActionResult> Register([FromBody] RegisterDataDto registerData, CancellationToken cancellationToken)
     {
         await userService.RegisterAsync(registerData, cancellationToken);
-        //todo Запрет на создания пользователя с админ ролью для НЕ админа
+        //todo Запрет на создания пользователя с админ ролью для НЕ админа. Для упрощения тестирования пока не реализовано.
 
         return NoContent();
     }
