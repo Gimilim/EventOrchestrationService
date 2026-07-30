@@ -15,4 +15,9 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
     {
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<User?> GetByLoginAsync(string login, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Users.FirstOrDefaultAsync(user => user.Login == login, cancellationToken);
+    }
 }

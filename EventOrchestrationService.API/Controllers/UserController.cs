@@ -26,12 +26,14 @@ public class UserController(IUserService userService) : ControllerBase
     /// <summary>
     /// Вход в систему.
     /// </summary>
-    /// <param name="id">ID события.</param>
+    /// <param name="loginData">Данные для входа.</param>
     /// <param name="cancellationToken">Токен отмены.</param>
     /// <returns>Информацию о созданном бронировании.</returns>
     [HttpPost("login")]
-    public async Task<IActionResult> Login(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Login([FromBody] LoginDataDto loginData, CancellationToken cancellationToken)
     {
-        return Ok();
+        var token = await userService.LoginAsync(loginData, cancellationToken);
+
+        return Ok(token);
     }
 }
