@@ -25,13 +25,27 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Integr
         return testEvent;
     }
 
+    private async Task<User> SeedTestUserAsync()
+    {
+        var testUser = new User(
+            "testLogin",
+            "testPassword",
+            Role.Admin);
+
+        await using var context = CreateContext();
+        await context.Users.AddAsync(testUser);
+        await context.SaveChangesAsync();
+        return testUser;
+    }
+
     [Fact]
     public async Task AddAsync_ValidBooking_AddsBookingToDatabase()
     {
         // Arrange
         var testEvent = await SeedTestEventAsync();
+        var testUser = await SeedTestUserAsync();
 
-        var newBooking = new Booking(testEvent.Id, BookingStatus.Pending);
+        var newBooking = new Booking(testEvent.Id, testUser.Id, BookingStatus.Pending);
 
         // Act
         await using (var context = CreateContext())
@@ -58,8 +72,9 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Integr
     {
         // Arrange
         var testEvent = await SeedTestEventAsync();
+        var testUser = await SeedTestUserAsync();
 
-        var booking = new Booking(testEvent.Id, BookingStatus.Pending);
+        var booking = new Booking(testEvent.Id, testUser.Id, BookingStatus.Pending);
         booking.Confirm();
 
         await using (var context = CreateContext())
@@ -98,17 +113,19 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Integr
     }
 
     [Fact]
-    public void AddAsync_InvalidEventId_ThrowsValidationException()
+    public async Task AddAsync_InvalidEventId_ThrowsValidationException()
     {
         // Act & Assert
-        Assert.Throws<ValidationException>(() => new Booking(0, BookingStatus.Pending));
+        var testUser = await SeedTestUserAsync();
+        Assert.Throws<ValidationException>(() => new Booking(0, testUser.Id, BookingStatus.Pending));
     }
 
     [Fact]
-    public void ConfirmAsync_AlreadyConfirmed_ThrowsValidationException()
+    public async Task ConfirmAsync_AlreadyConfirmed_ThrowsValidationException()
     {
         // Arrange
-        var booking = new Booking(1, BookingStatus.Pending);
+        var testUser = await SeedTestUserAsync();
+        var booking = new Booking(1, testUser.Id, BookingStatus.Pending);
         booking.Confirm();
 
         // Act & Assert
@@ -120,7 +137,9 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Integr
     {
         // Arrange
         var testEvent = await SeedTestEventAsync();
-        var booking = new Booking(testEvent.Id, BookingStatus.Pending);
+        var testUser = await SeedTestUserAsync();
+
+        var booking = new Booking(testEvent.Id, testUser.Id, BookingStatus.Pending);
 
         await using (var context = CreateContext())
         {

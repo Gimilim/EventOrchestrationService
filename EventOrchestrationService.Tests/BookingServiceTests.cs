@@ -1,6 +1,7 @@
 ﻿using EventOrchestrationService.Application.DTOs;
 using EventOrchestrationService.Application.Interfaces;
 using EventOrchestrationService.Application.Services;
+using EventOrchestrationService.Application.Settings;
 using EventOrchestrationService.Application.Validators;
 using EventOrchestrationService.Domain.Entities;
 using EventOrchestrationService.Domain.Enums;
@@ -8,6 +9,7 @@ using EventOrchestrationService.Domain.Exceptions;
 using EventOrchestrationService.Infrastructure.Data;
 using EventOrchestrationService.Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace EventOrchestrationService.Tests;
 
@@ -16,6 +18,7 @@ public class BookingServiceTests : IDisposable
     private readonly AppDbContext _context;
     private readonly IBookingService _service;
     private readonly IEventService _eventService;
+    private readonly IBookingRepository _bookingRepository;
 
     public BookingServiceTests()
     {
@@ -28,9 +31,17 @@ public class BookingServiceTests : IDisposable
 
         var eventRepository = new EventRepository(_context);
         var bookingRepository = new BookingRepository(_context);
+        _bookingRepository = bookingRepository;
 
         var createEventValidator = new CreateEventDtoValidator();
         var updateEventValidator = new UpdateEventDtoValidator();
+
+        var bookingSettings = new BookingSettings
+        {
+            MaxBookingsPerUser = 100
+        };
+
+        var optionsWrapper = Options.Create(bookingSettings);
 
         // Создаем сервисы
         _eventService = new EventService(
@@ -41,7 +52,23 @@ public class BookingServiceTests : IDisposable
 
         _service = new BookingService(
             _eventService,
-            bookingRepository
+            bookingRepository,
+            optionsWrapper
+        );
+    }
+
+    private BookingService CreateBookingService(int maxBookingsPerUser)
+    {
+        var bookingSettings = new BookingSettings
+        {
+            MaxBookingsPerUser = maxBookingsPerUser
+        };
+        var optionsWrapper = Options.Create(bookingSettings);
+
+        return new BookingService(
+            _eventService,
+            _bookingRepository,
+            optionsWrapper
         );
     }
 
@@ -59,15 +86,15 @@ public class BookingServiceTests : IDisposable
             new Event(
                 title: "Title1",
                 description: "Description1",
-                startAt: baseTime.AddDays(-5),
-                endAt: baseTime.AddDays(5),
+                startAt: baseTime.AddDays(5),
+                endAt: baseTime.AddDays(10),
                 totalSeats: 10
             ),
             new Event(
                 title: "Title2",
                 description: "Description2",
-                startAt: baseTime.AddDays(-5),
-                endAt: baseTime.AddDays(5),
+                startAt: baseTime.AddDays(5),
+                endAt: baseTime.AddDays(10),
                 totalSeats: 10
             ),
             new Event(
@@ -86,6 +113,28 @@ public class BookingServiceTests : IDisposable
             )
         );
         _context.SaveChanges();
+    }
+
+    private List<User> SeedUsers()
+    {
+        var users = new List<User>
+        {
+            new User(
+                login: "TestUser",
+                passwordHash: "TestPasswordHash",
+                role: Role.User
+            ),
+            new User(
+                login: "TestAdminUser",
+                passwordHash: "TestPasswordHash2",
+                role: Role.Admin
+            )
+        };
+
+        _context.Users.AddRange(users);
+        _context.SaveChanges();
+
+        return users;
     }
 
     /// <summary>
@@ -117,10 +166,12 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
         const int existingEventId = 1;
 
         // Act
-        var result = await _service.CreateBookingAsync(existingEventId, CancellationToken.None);
+        var result = await _service.CreateBookingAsync(existingEventId, userId, CancellationToken.None);
 
         // Assert
         Assert.NotNull(result);
@@ -139,12 +190,14 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
         const int eventId = 1;
 
         // Act
-        var booking1 = await _service.CreateBookingAsync(eventId, CancellationToken.None);
-        var booking2 = await _service.CreateBookingAsync(eventId, CancellationToken.None);
-        var booking3 = await _service.CreateBookingAsync(eventId, CancellationToken.None);
+        var booking1 = await _service.CreateBookingAsync(eventId, userId, CancellationToken.None);
+        var booking2 = await _service.CreateBookingAsync(eventId, userId, CancellationToken.None);
+        var booking3 = await _service.CreateBookingAsync(eventId, userId, CancellationToken.None);
 
         // Assert
         Assert.NotEqual(booking1.Id, booking2.Id);
@@ -162,7 +215,9 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
-        var createdBooking = await _service.CreateBookingAsync(1, CancellationToken.None);
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
+        var createdBooking = await _service.CreateBookingAsync(1, userId, CancellationToken.None);
 
         // Act
         var result = await _service.GetBookingByIdAsync(createdBooking.Id, CancellationToken.None);
@@ -184,7 +239,9 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
-        var createdBooking = await _service.CreateBookingAsync(1, CancellationToken.None);
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
+        var createdBooking = await _service.CreateBookingAsync(1, userId, CancellationToken.None);
 
         // Имитируем фоновую обработку -- меняем статус через доменный метод
         var dbBooking = await _context.Bookings.FindAsync(createdBooking.Id);
@@ -208,11 +265,13 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
         const int nonExistingEventId = 999;
 
         // Act & Assert
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            _service.CreateBookingAsync(nonExistingEventId, CancellationToken.None)
+            _service.CreateBookingAsync(nonExistingEventId, userId, CancellationToken.None)
         );
     }
 
@@ -225,12 +284,14 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
 
         // Используем существующий _eventService вместо создания нового
         await _eventService.DeleteEventAsync(2, CancellationToken.None);
 
         // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _service.CreateBookingAsync(2, CancellationToken.None)
+        await Assert.ThrowsAsync<NotFoundException>(() => _service.CreateBookingAsync(2, userId, CancellationToken.None)
         );
     }
 
@@ -260,6 +321,8 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
 
         const int eventId = 1;
 
@@ -267,7 +330,7 @@ public class BookingServiceTests : IDisposable
         var seatsBefore = eventBefore!.AvailableSeats;
 
         // Act
-        await _service.CreateBookingAsync(eventId, CancellationToken.None);
+        await _service.CreateBookingAsync(eventId, userId, CancellationToken.None);
 
         // Assert
         var eventAfter = await _eventService.GetEventByIdAsync(eventId, CancellationToken.None);
@@ -282,6 +345,8 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
         const int eventId = 1;
         var targetEvent = await _eventService.GetEventByIdAsync(eventId, CancellationToken.None);
         var totalSeats = targetEvent!.TotalSeats;
@@ -289,12 +354,12 @@ public class BookingServiceTests : IDisposable
         // Заполняем все места
         for (int i = 0; i < totalSeats; i++)
         {
-            await _service.CreateBookingAsync(eventId, CancellationToken.None);
+            await _service.CreateBookingAsync(eventId, userId, CancellationToken.None);
         }
 
         // Act & Assert
         await Assert.ThrowsAsync<NoAvailableSeatsException>(() =>
-            _service.CreateBookingAsync(eventId, CancellationToken.None)
+            _service.CreateBookingAsync(eventId, userId, CancellationToken.None)
         );
     }
 
@@ -306,7 +371,9 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
-        var booking = await _service.CreateBookingAsync(1, CancellationToken.None);
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
+        var booking = await _service.CreateBookingAsync(1, userId, CancellationToken.None);
 
         // Act
         booking.Confirm();
@@ -324,7 +391,9 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
-        var booking = await _service.CreateBookingAsync(1, CancellationToken.None);
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
+        var booking = await _service.CreateBookingAsync(1, userId, CancellationToken.None);
 
         // Act
         booking.Reject();
@@ -342,11 +411,13 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
         const int eventId = 1;
         var eventBefore = await _eventService.GetEventByIdAsync(eventId, CancellationToken.None);
         var seatsBefore = eventBefore!.AvailableSeats;
 
-        await _service.CreateBookingAsync(eventId, CancellationToken.None);
+        await _service.CreateBookingAsync(eventId, userId, CancellationToken.None);
 
         var eventAfterBooking = await _eventService.GetEventByIdAsync(eventId, CancellationToken.None);
         Assert.Equal(seatsBefore - 1, eventAfterBooking!.AvailableSeats);
@@ -378,11 +449,13 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
         const int eventId = 1;
         var targetEvent = await _eventService.GetEventByIdAsync(eventId, CancellationToken.None);
         var seatsBefore = targetEvent!.AvailableSeats;
 
-        var booking = await _service.CreateBookingAsync(eventId, CancellationToken.None);
+        var booking = await _service.CreateBookingAsync(eventId, userId, CancellationToken.None);
 
         targetEvent.ReleaseSeats();
 
@@ -397,7 +470,7 @@ public class BookingServiceTests : IDisposable
         await _eventService.UpdateEventAsync(eventId, updateDto, CancellationToken.None);
 
         // Act
-        var newBooking = await _service.CreateBookingAsync(eventId, CancellationToken.None);
+        var newBooking = await _service.CreateBookingAsync(eventId, userId, CancellationToken.None);
 
         // Assert
         Assert.NotNull(newBooking);
@@ -416,6 +489,8 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
         const int eventId = 3;
 
         const int concurrentRequests = 20;
@@ -426,7 +501,7 @@ public class BookingServiceTests : IDisposable
         // Act
         for (int i = 0; i < concurrentRequests; i++)
         {
-            tasks.Add(_service.CreateBookingAsync(eventId, CancellationToken.None));
+            tasks.Add(_service.CreateBookingAsync(eventId, userId, CancellationToken.None));
         }
 
         foreach (var task in tasks)
@@ -460,6 +535,8 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
         const int eventId = 4;
 
         var tasks = new List<Task<Booking>>();
@@ -467,7 +544,7 @@ public class BookingServiceTests : IDisposable
         // Act
         for (int i = 0; i < 10; i++)
         {
-            tasks.Add(_service.CreateBookingAsync(eventId, CancellationToken.None));
+            tasks.Add(_service.CreateBookingAsync(eventId, userId, CancellationToken.None));
         }
 
         var bookings = await Task.WhenAll(tasks);
@@ -489,7 +566,9 @@ public class BookingServiceTests : IDisposable
     public void ConfirmAsync_AlreadyConfirmed_ThrowsValidationException()
     {
         // Arrange
-        var booking = new Booking(1, BookingStatus.Pending);
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
+        var booking = new Booking(1, userId, BookingStatus.Pending);
         booking.Confirm();
 
         // Act & Assert
@@ -503,7 +582,9 @@ public class BookingServiceTests : IDisposable
     public void RejectAsync_AlreadyRejected_ThrowsValidationException()
     {
         // Arrange
-        var booking = new Booking(1, BookingStatus.Pending);
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
+        var booking = new Booking(1, userId, BookingStatus.Pending);
         booking.Reject();
 
         // Act & Assert
@@ -518,7 +599,9 @@ public class BookingServiceTests : IDisposable
     {
         // Arrange
         SeedEvents();
-        var booking = await _service.CreateBookingAsync(1, CancellationToken.None);
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
+        var booking = await _service.CreateBookingAsync(1, userId, CancellationToken.None);
 
         // Act
         booking.Reject();
@@ -534,7 +617,9 @@ public class BookingServiceTests : IDisposable
     [Fact]
     public void CreateBooking_WithInvalidEventId_ThrowsValidationException()
     {
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
         // Act & Assert
-        Assert.Throws<ValidationException>(() => new Booking(0, BookingStatus.Pending));
+        Assert.Throws<ValidationException>(() => new Booking(0, userId, BookingStatus.Pending));
     }
 }
