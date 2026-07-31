@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EventOrchestrationService.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260730211557_AddUsersTable")]
+    [Migration("20260731111930_AddUsersTable")]
     partial class AddUsersTable
     {
         /// <inheritdoc />
@@ -223,7 +223,9 @@ namespace EventOrchestrationService.Infrastructure.Data.Migrations
 
                     b.Property<string>("Login")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasComment("Логин пользователя");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -235,6 +237,9 @@ namespace EventOrchestrationService.Infrastructure.Data.Migrations
                         .HasComment("Роль Пользователя:\r\n1 - Пользователь (User)\r\n2 - Администратор (Admin)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Login")
+                        .IsUnique();
 
                     b.ToTable("Users", "public");
                 });

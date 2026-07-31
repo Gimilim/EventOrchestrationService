@@ -14,6 +14,14 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(b => b.Id)
             .HasComment("ИД пользователя");
 
+        builder.Property(u => u.Login)
+            .IsRequired()
+            .HasMaxLength(50)
+            .HasComment("Логин пользователя");
+
+        builder.HasIndex(u => u.Login)
+            .IsUnique();
+
         builder.Property(b => b.PasswordHash)
             .IsRequired()
             .HasComment("Хэш пароля");

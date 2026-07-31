@@ -38,7 +38,7 @@ namespace EventOrchestrationService.Infrastructure.Data.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false, comment: "ИД пользователя")
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Login = table.Column<string>(type: "text", nullable: false),
+                    Login = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Логин пользователя"),
                     PasswordHash = table.Column<string>(type: "text", nullable: false, comment: "Хэш пароля"),
                     Role = table.Column<short>(type: "smallint", nullable: false, comment: "Роль Пользователя:\r\n1 - Пользователь (User)\r\n2 - Администратор (Admin)")
                 },
@@ -52,6 +52,13 @@ namespace EventOrchestrationService.Infrastructure.Data.Migrations
                 schema: "public",
                 table: "Bookings",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Login",
+                schema: "public",
+                table: "Users",
+                column: "Login",
+                unique: true);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Bookings_Users_UserId",
