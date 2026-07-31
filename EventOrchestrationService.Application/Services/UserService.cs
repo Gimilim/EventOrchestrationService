@@ -18,6 +18,11 @@ public class UserService(
     {
         await registerDataValidator.ValidateAndThrowAsync(registerData, cancellationToken);
 
+        //todo покрыть тестами данный сценарий
+        var existingUser = await userRepository.GetByLoginAsync(registerData.Login, cancellationToken);
+        if (existingUser is not null)
+            throw new Domain.Exceptions.ValidationException("Пользователь с таким логином уже существует.");
+
         var role = registerData.Role ?? Role.User;
         var hashedPassword = passwordHasher.HashPassword(registerData.Password);
 
