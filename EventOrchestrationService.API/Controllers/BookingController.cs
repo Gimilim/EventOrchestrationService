@@ -36,13 +36,13 @@ public class BookingController(IBookingService bookingService) : ApiControllerBa
     /// <param name="id">ID бронирования.</param>
     /// <param name="cancellationToken">Токен отмены.</param>
     /// <returns>Текущее состояние брони по её идентификатору.</returns>
-    [HttpGet("{id:int}")]
-    public async Task<IActionResult> CanselBooking(int id, CancellationToken cancellationToken)
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> CancelBooking(int id, CancellationToken cancellationToken)
     {
         var userId = GetUserIdFromToken();
-        var skipCanselPermission = User.IsInRole(nameof(Role.Admin));
+        var skipCancelPermission = User.IsInRole(nameof(Role.Admin));
 
-        await bookingService.CancelBookingAsync(id, userId, skipCanselPermission, cancellationToken);
+        await bookingService.CancelBookingAsync(id, userId, skipCancelPermission, cancellationToken);
 
         return NoContent();
     }

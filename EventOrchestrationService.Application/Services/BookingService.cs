@@ -57,7 +57,7 @@ public class BookingService(
         return await bookingRepository.GetByIdAsync(bookingId, cancellationToken);
     }
 
-    public async Task CancelBookingAsync(int bookingId, int userId, bool skipCanselPermission,
+    public async Task CancelBookingAsync(int bookingId, int userId, bool skipCancelPermission,
         CancellationToken cancellationToken)
     {
         var targetBooking = await bookingRepository.GetByIdAsync(bookingId, cancellationToken);
@@ -65,7 +65,7 @@ public class BookingService(
         if (targetBooking is null)
             throw new NotFoundException($"Бронирование с ID {bookingId} не найдено");
 
-        if (!skipCanselPermission && targetBooking.UserId != userId)
+        if (!skipCancelPermission && targetBooking.UserId != userId)
             throw new AccessDeniedException("Можно отменить только свое бронирование.");
 
         targetBooking.Cancel();

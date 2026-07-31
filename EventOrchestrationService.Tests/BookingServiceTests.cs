@@ -671,7 +671,7 @@ public class BookingServiceTests : IDisposable
             _service.CreateBookingAsync(eventId, userId, CancellationToken.None)
         );
     }
-    
+
     /// <summary>
     /// Проверка, что лимиты бронирований для разных пользователей не влияют друг на друга.
     /// </summary>
@@ -709,5 +709,28 @@ public class BookingServiceTests : IDisposable
 
         var targetEvent = await _eventService.GetEventByIdAsync(eventId, CancellationToken.None);
         Assert.Equal(4, targetEvent!.AvailableSeats);
+    }
+
+    /// <summary>
+    /// Проверка, что лимиты работают только для статусов Pending/Confirmed (только активные брони)
+    /// </summary>
+    [Fact]
+    public async Task CountBookingsByUserIdAsync_WhenBookingCancelled_DoesNotCount()
+    {
+        // Arrange
+        SeedEvents();
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
+
+        var booking = await _service.CreateBookingAsync(1, userId, CancellationToken.None);
+
+        booking.Cancel();
+        await _context.SaveChangesAsync();
+
+        // Act
+        var count = await _bookingRepository.CountBookingsByUserIdAsync(userId);
+
+        // Assert
+        Assert.Equal(0, count);
     }
 }
