@@ -18,6 +18,10 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
             .IsRequired()
             .HasComment("ИД события");
 
+        builder.Property(b => b.UserId)
+            .IsRequired()
+            .HasComment("ИД пользователя");
+
         builder.Property(b => b.Status)
             .IsRequired()
             .HasColumnType("smallint")
@@ -27,6 +31,7 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
                         1 - В обработке (Pending)
                         2 - Подтверждено (Confirmed)
                         3 - Отклонено (Rejected)
+                        3 - Отменено (Cancelled)
                         """);
 
 
@@ -40,6 +45,11 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.HasOne<Event>(b => b.Event)
             .WithMany(e => e.Bookings)
             .HasForeignKey(b => b.EventId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<User>(b => b.User)
+            .WithMany(e => e.Bookings)
+            .HasForeignKey(b => b.UserId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

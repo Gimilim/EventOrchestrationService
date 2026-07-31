@@ -56,7 +56,7 @@ public class EventServiceTests : IDisposable
                 title: "Title2",
                 description: "Description2",
                 startAt: new DateTime(2025, 1, 30, 0, 0, 0, DateTimeKind.Utc),
-                endAt: new DateTime(2026, 12, 30, 0, 0, 0, DateTimeKind.Utc), // ✅ 2026 > 2025
+                endAt: new DateTime(2026, 12, 30, 0, 0, 0, DateTimeKind.Utc),
                 totalSeats: 10
             ),
             new Event(
@@ -77,7 +77,7 @@ public class EventServiceTests : IDisposable
                 title: "abc_Title5",
                 description: "Description5",
                 startAt: new DateTime(2055, 1, 30, 0, 0, 0, DateTimeKind.Utc),
-                endAt: new DateTime(2056, 6, 30, 0, 0, 0, DateTimeKind.Utc), // ✅ 2056 > 2055
+                endAt: new DateTime(2056, 6, 30, 0, 0, 0, DateTimeKind.Utc),
                 totalSeats: 10
             ),
             new Event(

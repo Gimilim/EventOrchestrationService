@@ -57,9 +57,13 @@ public class GlobalExceptionHandlingMiddleware(
             ValidationException => StatusCodes.Status400BadRequest,
             NoAvailableSeatsException => StatusCodes.Status409Conflict,
             ConcurrencyException => StatusCodes.Status409Conflict,
+            UnauthorizedException => StatusCodes.Status401Unauthorized,
+            EventAlreadyStartedException => StatusCodes.Status400BadRequest,
+            BookingLimitExceededException => StatusCodes.Status409Conflict,
+            AccessDeniedException => StatusCodes.Status403Forbidden,
             _ => StatusCodes.Status500InternalServerError
         };
-    
+
     private static string GetTitle(Exception ex)
         => ex switch
         {
@@ -68,6 +72,10 @@ public class GlobalExceptionHandlingMiddleware(
             ValidationException => "Validation Error",
             NoAvailableSeatsException => "No available seats for this even",
             ConcurrencyException => "Concurrency Conflict",
+            UnauthorizedException => "Unauthorized",
+            EventAlreadyStartedException => "Event already started",
+            BookingLimitExceededException => "Booking limit exceeded",
+            AccessDeniedException => "Access denied",
             _ => "Server Error"
         };
 }

@@ -9,22 +9,28 @@ public class Booking
     {
     }
 
-    public Booking(int eventId, BookingStatus status)
+    public Booking(int eventId, int userId, BookingStatus status)
     {
         if (eventId <= 0)
             throw new ValidationException("ИД события обязательно для заполнения");
 
+        if (userId <= 0)
+            throw new ValidationException("ИД пользователя обязательно для заполнения");
+
         EventId = eventId;
+        UserId = userId;
         Status = status;
         CreatedAt = DateTime.UtcNow;
     }
 
     public int Id { get; private set; }
     public int EventId { get; private set; }
+    public int UserId { get; private set; }
     public BookingStatus Status { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime? ProcessedAt { get; private set; }
     public Event Event { get; private set; }
+    public User User { get; private set; }
 
     public void Confirm()
     {
@@ -41,6 +47,15 @@ public class Booking
             throw new ValidationException("Бронь уже отклонена");
 
         Status = BookingStatus.Rejected;
+        ProcessedAt = DateTime.UtcNow;
+    }
+
+    public void Cancel()
+    {
+        if (Status == BookingStatus.Cancelled)
+            throw new ValidationException("Бронь уже отменена");
+
+        Status = BookingStatus.Cancelled;
         ProcessedAt = DateTime.UtcNow;
     }
 }

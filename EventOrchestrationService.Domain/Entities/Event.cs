@@ -1,4 +1,5 @@
 ﻿using EventOrchestrationService.Domain.Constants;
+using EventOrchestrationService.Domain.Enums;
 using EventOrchestrationService.Domain.Exceptions;
 
 namespace EventOrchestrationService.Domain.Entities;
@@ -40,17 +41,18 @@ public class Event
     public ICollection<Booking> Bookings { get; private set; } = new List<Booking>();
     public uint RowVersion { get; private set; }
 
-    public bool TryReserveSeats(int count = 1)
+    public ReservationResult TryReserveSeats(int count = 1)
     {
         lock (_seatsLock)
         {
-            if (AvailableSeats >= count)
-            {
-                AvailableSeats -= count;
-                return true;
-            }
+            if (DateTime.UtcNow >= StartAt)
+                return ReservationResult.EventAlreadyStarted;
 
-            return false;
+            if (AvailableSeats < count)
+                return ReservationResult.NoAvailableSeats;
+
+            AvailableSeats -= count;
+            return ReservationResult.Success;
         }
     }
 

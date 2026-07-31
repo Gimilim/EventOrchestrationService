@@ -1,7 +1,9 @@
 ﻿using EventOrchestrationService.Application.Interfaces;
+using EventOrchestrationService.Application.Settings;
 using EventOrchestrationService.Infrastructure.BackgroundServices;
 using EventOrchestrationService.Infrastructure.Data;
 using EventOrchestrationService.Infrastructure.Data.Repositories;
+using EventOrchestrationService.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,6 +37,13 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IPasswordHasher, PasswordHasher>();
+
+        services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
+        services.AddScoped<IJwtService, JwtService>();
+
+        services.Configure<BookingSettings>(configuration.GetSection("BookingSettings"));
 
         services.AddHostedService<BookingBackgroundService>();
 

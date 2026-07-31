@@ -36,4 +36,12 @@ public class BookingRepository(AppDbContext dbContext) : IBookingRepository
             .Where(b => b.Status == BookingStatus.Pending)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<int> CountBookingsByUserIdAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Bookings
+            .CountAsync(
+                b => b.UserId == userId && (b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed),
+                cancellationToken);
+    }
 }
