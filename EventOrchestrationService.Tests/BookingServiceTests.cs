@@ -110,6 +110,13 @@ public class BookingServiceTests : IDisposable
                 startAt: baseTime.AddDays(1),
                 endAt: baseTime.AddDays(2),
                 totalSeats: 10
+            ),
+            new Event(
+                title: "AlreadyStartedEvent",
+                description: "AlreadyStartedEvent",
+                startAt: baseTime.AddDays(-1),
+                endAt: baseTime.AddDays(2),
+                totalSeats: 10
             )
         );
         _context.SaveChanges();
@@ -621,5 +628,86 @@ public class BookingServiceTests : IDisposable
         var userId = users.First(u => u.Login == "TestUser").Id;
         // Act & Assert
         Assert.Throws<ValidationException>(() => new Booking(0, userId, BookingStatus.Pending));
+    }
+
+    /// <summary>
+    /// Проверка, что бронь нельзя создать, если пользователь достиг лимита
+    /// </summary>
+    [Fact]
+    public async Task Booking_AfterLimit_ThrowsBookingLimitExceededException()
+    {
+        // Arrange
+        SeedEvents();
+        var users = SeedUsers();
+        var limitedService = CreateBookingService(3);
+        var userId = users.First(u => u.Login == "TestUser").Id;
+        const int eventId = 1;
+
+        for (int i = 0; i < 3; i++)
+        {
+            await limitedService.CreateBookingAsync(eventId, userId, CancellationToken.None);
+        }
+
+        // Act & Assert
+        await Assert.ThrowsAsync<BookingLimitExceededException>(() =>
+            limitedService.CreateBookingAsync(eventId, userId, CancellationToken.None)
+        );
+    }
+
+    /// <summary>
+    /// Проверка, что бронь нельзя создать, если событие уже началось
+    /// </summary>
+    [Fact]
+    public async Task Booking_AfterEventStart_ThrowsEventAlreadyStartedException()
+    {
+        // Arrange
+        SeedEvents();
+        var users = SeedUsers();
+        var userId = users.First(u => u.Login == "TestUser").Id;
+        const int eventId = 5;
+
+        // Act & Assert
+        await Assert.ThrowsAsync<EventAlreadyStartedException>(() =>
+            _service.CreateBookingAsync(eventId, userId, CancellationToken.None)
+        );
+    }
+    
+    /// <summary>
+    /// Проверка, что лимиты бронирований для разных пользователей не влияют друг на друга.
+    /// </summary>
+    [Fact]
+    public async Task CreateBookingAsync_WhenTwoUsersHaveSeparateLimits_EachUserHasOwnLimit()
+    {
+        // Arrange
+        SeedEvents();
+        var users = SeedUsers();
+        var userId1 = users.First(u => u.Login == "TestUser").Id;
+        var userId2 = users.First(u => u.Login == "TestAdminUser").Id;
+        const int eventId = 1;
+
+        var service = CreateBookingService(3);
+
+        // Act
+        for (int i = 0; i < 3; i++)
+        {
+            await service.CreateBookingAsync(eventId, userId1, CancellationToken.None);
+        }
+
+        for (int i = 0; i < 3; i++)
+        {
+            await service.CreateBookingAsync(eventId, userId2, CancellationToken.None);
+        }
+
+        // Assert
+        var bookingsUser1 = await _context.Bookings
+            .CountAsync(b => b.UserId == userId1);
+        Assert.Equal(3, bookingsUser1);
+
+        var bookingsUser2 = await _context.Bookings
+            .CountAsync(b => b.UserId == userId2);
+        Assert.Equal(3, bookingsUser2);
+
+        var targetEvent = await _eventService.GetEventByIdAsync(eventId, CancellationToken.None);
+        Assert.Equal(4, targetEvent!.AvailableSeats);
     }
 }
