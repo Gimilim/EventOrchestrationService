@@ -6,4 +6,8 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\Contracts\EventOrchestrationService.Contracts\EventOrchestrationService.Contracts.csproj" />
+    </ItemGroup>
+
 </Project>
