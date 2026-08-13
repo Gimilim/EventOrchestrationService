@@ -1,6 +1,6 @@
-﻿namespace EventService.Application.DTOs;
+﻿namespace EventOrchestrationService.Contracts.DTOs;
 
-public class UpdateEventDto
+public class UpdateEventContractDto
 {
     public string? Title { get; set; }
     public string? Description { get; set; }

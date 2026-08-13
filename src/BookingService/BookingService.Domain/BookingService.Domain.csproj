@@ -10,4 +10,8 @@
       <ProjectReference Include="..\..\Contracts\EventOrchestrationService.Contracts\EventOrchestrationService.Contracts.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Constants\" />
+    </ItemGroup>
+
 </Project>

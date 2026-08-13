@@ -7,7 +7,12 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <Folder Include="Enums\" />
       <Folder Include="Exceptions\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Contracts\EventOrchestrationService.Contracts\EventOrchestrationService.Contracts.csproj" />
     </ItemGroup>
 
 </Project>

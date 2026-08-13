@@ -1,4 +1,4 @@
-﻿namespace EventService.Application.Enums;
+﻿namespace EventService.Domain.Enums;
 
 public enum ReservationResult
 {
