@@ -1,10 +1,10 @@
 using System.Text;
-using EventOrchestrationService.Application.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using UserService.API.Middleware;
+using UserService.Application.Extensions;
 using UserService.Application.Settings;
 using UserService.Infrastructure.Data;
 using UserService.Infrastructure.Extensions;

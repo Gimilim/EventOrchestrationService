@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using UserService.Application.Interfaces;
 
-namespace EventOrchestrationService.Application.Extensions;
+namespace UserService.Application.Extensions;
 
 public static class ServiceCollectionExtensions
 {
