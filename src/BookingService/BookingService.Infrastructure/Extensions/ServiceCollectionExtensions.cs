@@ -3,6 +3,7 @@ using BookingService.Application.Settings;
 using BookingService.Infrastructure.BackgroundServices;
 using BookingService.Infrastructure.Data;
 using BookingService.Infrastructure.Data.Repositories;
+using BookingService.Infrastructure.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +38,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBookingRepository, BookingRepository>();
 
         services.Configure<BookingSettings>(configuration.GetSection("BookingSettings"));
+
+        // Блок Кафки
+        services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));
+        services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 
         services.AddHostedService<BookingBackgroundService>();
 

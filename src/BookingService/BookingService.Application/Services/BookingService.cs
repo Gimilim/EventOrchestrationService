@@ -3,43 +3,35 @@ using BookingService.Application.Settings;
 using BookingService.Domain.Entities;
 using BookingService.Domain.Enums;
 using BookingService.Domain.Exceptions;
+using EventOrchestrationService.Contracts.Events;
 using EventOrchestrationService.Contracts.Exceptions;
 using Microsoft.Extensions.Options;
 
 namespace BookingService.Application.Services;
 
 public class BookingService(
-    IEventService eventService,
     IBookingRepository bookingRepository,
-    IOptions<BookingSettings> settings) : IBookingService
+    IOptions<BookingSettings> settings,
+    IEventPublisher eventPublisher) : IBookingService
 {
     public async Task<Booking> CreateBookingAsync(int eventId, int userId, CancellationToken cancellationToken)
     {
         await EnsureUserCanBookAsync(userId, cancellationToken);
 
-        var targetEvent = await eventService.GetEventByIdAsync(eventId, cancellationToken);
-
-        if (targetEvent == null)
-            throw new NotFoundException($"Событие с ID {eventId} не найдено");
-
-        var reserveResult = targetEvent.TryReserveSeats();
-
-        switch (reserveResult)
-        {
-            case ReservationResult.Success:
-                break;
-            case ReservationResult.EventAlreadyStarted:
-                throw new EventAlreadyStartedException($"Событие с ID {eventId} уже началось");
-            case ReservationResult.NoAvailableSeats:
-                throw new NoAvailableSeatsException($"На событие с ID {eventId} нет свободных мест");
-            default:
-                throw new InvalidOperationException("Неизвестная ошибка бронирования");
-        }
-
         var createdBooking = new Booking(eventId, userId, BookingStatus.Pending);
 
         await bookingRepository.AddAsync(createdBooking, cancellationToken);
         await bookingRepository.SaveChangesAsync(cancellationToken);
+
+        var evt = new BookingCreatedEvent
+        {
+            BookingId = createdBooking.Id,
+            EventId = eventId,
+            UserId = userId,
+            CreatedAt = createdBooking.CreatedAt
+        };
+
+        await eventPublisher.PublishAsync("booking-created", evt, key: eventId.ToString(), cancellationToken);
 
         return createdBooking;
     }
