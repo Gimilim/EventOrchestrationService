@@ -29,6 +29,7 @@ public class Booking
     public BookingStatus Status { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime? ProcessedAt { get; private set; }
+    public int RetryCount { get; private set; } = 0;
 
     public void Confirm()
     {
@@ -54,6 +55,17 @@ public class Booking
             throw new ValidationException("Бронь уже отменена");
 
         Status = BookingStatus.Cancelled;
+        ProcessedAt = DateTime.UtcNow;
+    }
+
+    public void IncrementRetryCount()
+    {
+        RetryCount++;
+    }
+
+    public void MarkAsFailed()
+    {
+        Status = BookingStatus.Failed;
         ProcessedAt = DateTime.UtcNow;
     }
 }

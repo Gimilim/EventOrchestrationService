@@ -9,4 +9,5 @@ public interface IBookingRepository
     Task AddAsync(Booking newBooking, CancellationToken cancellationToken = default);
     Task<List<Booking>> GetPendingBookingsAsync(CancellationToken cancellationToken = default);
     Task<int> CountBookingsByUserIdAsync(int userId, CancellationToken cancellationToken = default);
+    Task<List<Booking>> GetPendingBookingsOlderThanAsync(DateTime threshold, CancellationToken cancellationToken = default);
 }

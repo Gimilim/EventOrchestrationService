@@ -44,4 +44,12 @@ public class BookingRepository(AppDbContext dbContext) : IBookingRepository
                 b => b.UserId == userId && (b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed),
                 cancellationToken);
     }
+
+    public async Task<List<Booking>> GetPendingBookingsOlderThanAsync(DateTime threshold, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Bookings
+            .Where(b => b.Status == BookingStatus.Pending && b.CreatedAt < threshold)
+            .OrderBy(b => b.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
 }

@@ -32,6 +32,7 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
                         2 - Подтверждено (Confirmed)
                         3 - Отклонено (Rejected)
                         3 - Отменено (Cancelled)
+                        9 - Ошибка обработки (Failed)
                         """);
 
 

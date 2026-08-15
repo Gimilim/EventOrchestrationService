@@ -1,5 +1,6 @@
 ﻿using BookingService.Application.Interfaces;
-using BookingService.Domain.Entities;
+using BookingService.Infrastructure.Logging;
+using EventOrchestrationService.Contracts.Events;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -8,10 +9,12 @@ namespace BookingService.Infrastructure.BackgroundServices;
 
 public class BookingBackgroundService(
     IServiceScopeFactory scopeFactory,
-    ILogger<BookingBackgroundService> logger)
+    ILogger<BookingBackgroundService> logger,
+    IEventPublisher eventPublisher)
     : BackgroundService
 {
-    private readonly SemaphoreSlim _processingSemaphore = new(1, 1);
+    private const int MaxRetryCount = 3;
+    private readonly TimeSpan _retryDelay = TimeSpan.FromMinutes(5);
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
@@ -22,17 +25,54 @@ public class BookingBackgroundService(
                 using var scope = scopeFactory.CreateScope();
                 var bookingRepository = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
 
-                var pendingBookings = await bookingRepository.GetPendingBookingsAsync(cancellationToken);
+                var threshold = DateTime.UtcNow.Subtract(_retryDelay);
+                var pendingBookings =
+                    await bookingRepository.GetPendingBookingsOlderThanAsync(threshold, cancellationToken);
 
-                if (pendingBookings.Count != 0)
-                {
-                    var tasks = pendingBookings.Select(booking =>
-                        ProcessBookingAsync(booking, cancellationToken));
-                    await Task.WhenAll(tasks);
-                }
-                else
+                if (pendingBookings.Count == 0)
                 {
                     await Task.Delay(5000, cancellationToken);
+                }
+
+                foreach (var booking in pendingBookings)
+                {
+                    if (booking.RetryCount >= MaxRetryCount)
+                    {
+                        booking.MarkAsFailed();
+                        await bookingRepository.SaveChangesAsync(cancellationToken);
+
+                        logger.LogFailedBooking(booking.Id, booking.RetryCount);
+
+                        continue;
+                    }
+
+                    booking.IncrementRetryCount();
+
+                    var evt = new BookingCreatedEvent
+                    {
+                        BookingId = booking.Id,
+                        EventId = booking.EventId,
+                        UserId = booking.UserId,
+                        CreatedAt = booking.CreatedAt
+                    };
+
+                    try
+                    {
+                        await eventPublisher.PublishAsync(
+                            topic: "booking-created",
+                            message: evt,
+                            key: booking.EventId.ToString(),
+                            cancellationToken: cancellationToken
+                        );
+
+                        logger.LogBookingRetry(booking.Id, booking.RetryCount);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogBookingPublishError(ex, booking.Id);
+                    }
+
+                    await bookingRepository.SaveChangesAsync(cancellationToken);
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -43,98 +83,6 @@ public class BookingBackgroundService(
             {
                 logger.LogError(ex, "Ошибка в BookingBackgroundService");
                 await Task.Delay(5000, cancellationToken);
-            }
-        }
-    }
-
-    private async Task ProcessBookingAsync(Booking booking, CancellationToken cancellationToken)
-    {
-        try
-        {
-            // имитация долгой обработки
-            await Task.Delay(10000, cancellationToken);
-
-            await _processingSemaphore.WaitAsync(cancellationToken);
-
-            try
-            {
-                using var scope = scopeFactory.CreateScope();
-                var bookingRepository = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
-                var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
-                var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
-
-                var targetEvent = await eventService.GetEventByIdAsync(booking.EventId, cancellationToken);
-                var targetBooking = await bookingService.GetBookingByIdAsync(booking.Id, cancellationToken);
-
-                if (targetBooking == null)
-                {
-                    logger.LogWarning("Бронь {BookingId} не найдена", booking.Id);
-                    return;
-                }
-
-                if (targetEvent == null)
-                {
-                    targetBooking.Reject();
-                    await bookingRepository.SaveChangesAsync(cancellationToken);
-
-                    logger.LogWarning("Событие с ID = {EventId} не найдено, бронь с ID = {BookingId} отклонена",
-                        booking.EventId, booking.Id);
-                    return;
-                }
-
-                targetBooking.Confirm();
-                await bookingRepository.SaveChangesAsync(cancellationToken);
-            }
-            finally
-            {
-                _processingSemaphore.Release();
-            }
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            logger.LogInformation("Обработка брони c ID {BookingId} отменена.", booking.Id);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Неожиданная ошибка при обработке брони {BookingId}", booking.Id);
-
-            await _processingSemaphore.WaitAsync(cancellationToken);
-
-            try
-            {
-                using var scope = scopeFactory.CreateScope();
-                var bookingRepository = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
-                var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
-                var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
-
-                var targetBooking = await bookingService.GetBookingByIdAsync(booking.Id, cancellationToken);
-
-                if (targetBooking != null)
-                {
-                    targetBooking.Reject();
-
-                    var targetEvent = await eventService.GetEventByIdAsync(booking.EventId, cancellationToken);
-                    if (targetEvent != null)
-                    {
-                        targetEvent.ReleaseSeats();
-                    }
-
-                    await bookingRepository.SaveChangesAsync(cancellationToken);
-
-                    logger.LogInformation(
-                        "Бронь с ID = {BookingId} отклонена, место возвращено событию с ID = {EventId}",
-                        booking.Id, booking.EventId);
-                }
-            }
-            catch (Exception innerEx)
-            {
-                logger.LogError(innerEx, "Критическая ошибка при обработке исключения для брони {BookingId}",
-                    booking.Id);
-            }
-            finally
-            {
-                _processingSemaphore.Release();
             }
         }
     }
