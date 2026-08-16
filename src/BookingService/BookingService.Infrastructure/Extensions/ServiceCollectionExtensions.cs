@@ -36,12 +36,15 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IOutboxRepository, OutboxRepository>();
+        services.AddScoped<IInboxRepository, InboxRepository>();
 
         services.Configure<BookingSettings>(configuration.GetSection("BookingSettings"));
 
         // Блок Кафки
         services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));
         services.AddHostedService<KafkaEventConsumer>();
+        services.AddHostedService<OutboxProcessor>();
         services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 
         services.AddHostedService<BookingBackgroundService>();

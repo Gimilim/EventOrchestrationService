@@ -36,6 +36,7 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddScoped<IEventRepository, EventRepository>();
+        services.AddScoped<IInboxRepository, InboxRepository>();
 
         // Блок Кафки
         services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));

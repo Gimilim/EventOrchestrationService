@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
 using System.Text.Json;
+using BookingService.Domain.Entities;
 
 namespace BookingService.Infrastructure.Messaging;
 
@@ -65,6 +66,7 @@ public class KafkaEventConsumer : BackgroundService
 
                 using var scope = _scopeFactory.CreateScope();
                 var bookingRepository = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
+                var inboxRepository = scope.ServiceProvider.GetRequiredService<IInboxRepository>();
 
                 switch (consumeResult.Topic)
                 {
@@ -73,6 +75,14 @@ public class KafkaEventConsumer : BackgroundService
                         var evt = JsonSerializer.Deserialize<BookingConfirmedEvent>(consumeResult.Message.Value);
                         if (evt == null) continue;
 
+                        var inboxEventId = $"confirmed_{evt.BookingId}";
+                        if (await inboxRepository.ExistsAsync(inboxEventId, consumeResult.Topic, stoppingToken))
+                        {
+                            _logger.LogInboxDuplicateSkipped(inboxEventId);
+                            _consumer.Commit(consumeResult);
+                            break;
+                        }
+
                         _logger.LogBookingConfirmedReceived(evt.BookingId);
 
                         await _retryPolicy.ExecuteAsync(async () =>
@@ -80,11 +90,15 @@ public class KafkaEventConsumer : BackgroundService
                             var booking = await bookingRepository.GetByIdAsync(evt.BookingId, stoppingToken);
                             if (booking == null)
                             {
-                                _logger.LogWarning("Бронь {BookingId} не найдена", evt.BookingId);
+                                _logger.LogBookingNotFound(evt.BookingId);
                                 return;
                             }
 
                             booking.Confirm();
+                            await bookingRepository.SaveChangesAsync(stoppingToken);
+
+                            var inboxMessage = new InboxMessage(inboxEventId, consumeResult.Topic, consumeResult.Message.Value);
+                            await inboxRepository.AddAsync(inboxMessage, stoppingToken);
                             await bookingRepository.SaveChangesAsync(stoppingToken);
                         });
 
@@ -96,6 +110,14 @@ public class KafkaEventConsumer : BackgroundService
                     {
                         var evt = JsonSerializer.Deserialize<BookingRejectedEvent>(consumeResult.Message.Value);
                         if (evt == null) continue;
+
+                        var inboxEventId = $"rejected_{evt.BookingId}";
+                        if (await inboxRepository.ExistsAsync(inboxEventId, consumeResult.Topic, stoppingToken))
+                        {
+                            _logger.LogInboxDuplicateSkipped(inboxEventId);
+                            _consumer.Commit(consumeResult);
+                            break;
+                        }
 
                         _logger.LogBookingRejectedReceived(evt.BookingId, evt.Reason);
 

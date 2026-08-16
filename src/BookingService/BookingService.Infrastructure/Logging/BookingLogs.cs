@@ -21,13 +21,14 @@ public static partial class BookingLogs
         Level = LogLevel.Error,
         Message = "Ошибка при отправке события для брони {BookingId}")]
     public static partial void LogBookingPublishError(this ILogger logger, Exception exception, int bookingId);
-    
+
     [LoggerMessage(
         EventId = 1004,
         Level = LogLevel.Warning,
         Message = "Повторная попытка {RetryCount} через {DelaySeconds}с при отправке события бронирования")]
-    public static partial void LogPublishRetry(this ILogger logger, int retryCount, int delaySeconds, Exception exception);
-    
+    public static partial void LogPublishRetry(this ILogger logger, int retryCount, int delaySeconds,
+        Exception exception);
+
     [LoggerMessage(
         EventId = 1005,
         Level = LogLevel.Information,
@@ -63,4 +64,28 @@ public static partial class BookingLogs
         Level = LogLevel.Warning,
         Message = "Бронь {BookingId} не найдена")]
     public static partial void LogBookingNotFound(this ILogger logger, int bookingId);
+
+    [LoggerMessage(
+        EventId = 1011,
+        Level = LogLevel.Information,
+        Message = "Сообщение {MessageId} отправлено в топик {Topic}")]
+    public static partial void LogOutboxMessageSent(this ILogger logger, Guid messageId, string topic);
+
+    [LoggerMessage(
+        EventId = 1012,
+        Level = LogLevel.Error,
+        Message = "Ошибка при отправке сообщения {MessageId}")]
+    public static partial void LogOutboxMessageError(this ILogger logger, Exception exception, Guid messageId);
+
+    [LoggerMessage(
+        EventId = 1013,
+        Level = LogLevel.Error,
+        Message = "Ошибка в OutboxProcessor")]
+    public static partial void LogOutboxProcessorError(this ILogger logger, Exception exception);
+
+    [LoggerMessage(
+        EventId = 1014,
+        Level = LogLevel.Warning,
+        Message = "Дубликат события {EventId} пропущен (уже обработан)")]
+    public static partial void LogInboxDuplicateSkipped(this ILogger logger, string eventId);
 }

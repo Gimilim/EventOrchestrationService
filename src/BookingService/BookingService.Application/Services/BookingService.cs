@@ -1,4 +1,5 @@
-﻿using BookingService.Application.Interfaces;
+﻿using System.Text.Json;
+using BookingService.Application.Interfaces;
 using BookingService.Application.Settings;
 using BookingService.Domain.Entities;
 using BookingService.Domain.Enums;
@@ -12,7 +13,8 @@ namespace BookingService.Application.Services;
 public class BookingService(
     IBookingRepository bookingRepository,
     IOptions<BookingSettings> settings,
-    IEventPublisher eventPublisher) : IBookingService
+    IEventPublisher eventPublisher,
+    IOutboxRepository outboxRepository) : IBookingService
 {
     public async Task<Booking> CreateBookingAsync(int eventId, int userId, CancellationToken cancellationToken)
     {
@@ -31,7 +33,13 @@ public class BookingService(
             CreatedAt = createdBooking.CreatedAt
         };
 
-        await eventPublisher.PublishAsync("booking-created", evt, key: eventId.ToString(), cancellationToken);
+        var outboxMessage = new OutboxMessage(
+            topic: "booking-created",
+            payload: JsonSerializer.Serialize(evt),
+            key: eventId.ToString()
+        );
+        await outboxRepository.AddAsync(outboxMessage, cancellationToken);
+        await bookingRepository.SaveChangesAsync(cancellationToken);
 
         return createdBooking;
     }
@@ -63,18 +71,20 @@ public class BookingService(
 
         targetBooking.Cancel();
 
-        await bookingRepository.SaveChangesAsync(cancellationToken);
+        var evt = new BookingCancelledEvent
+        {
+            BookingId = targetBooking.Id,
+            EventId = targetBooking.EventId,
+            UserId = targetBooking.UserId
+        };
 
-        await eventPublisher.PublishAsync(
-            "booking-cancelled",
-            new BookingCancelledEvent
-            {
-                BookingId = targetBooking.Id,
-                EventId = targetBooking.EventId,
-                UserId = targetBooking.UserId
-            },
-            key: targetBooking.EventId.ToString(),
-            cancellationToken: cancellationToken
+        var outboxMessage = new OutboxMessage(
+            topic: "booking-cancelled",
+            payload: JsonSerializer.Serialize(evt),
+            key: targetBooking.EventId.ToString()
         );
+
+        await outboxRepository.AddAsync(outboxMessage, cancellationToken);
+        await bookingRepository.SaveChangesAsync(cancellationToken);
     }
 }

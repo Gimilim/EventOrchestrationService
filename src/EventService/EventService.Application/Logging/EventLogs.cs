@@ -63,4 +63,16 @@ public static partial class EventLogs
         Level = LogLevel.Information,
         Message = "Получено событие отмены брони: BookingId={BookingId}")]
     public static partial void LogBookingCancelledReceived(this ILogger logger, int bookingId);
+
+    [LoggerMessage(
+        EventId = 2011,
+        Level = LogLevel.Warning,
+        Message = "Событие {EventId} уже было обработано, пропускаем")]
+    public static partial void LogEventAlreadyProcessed(this ILogger logger, string eventId);
+
+    [LoggerMessage(
+        EventId = 2012,
+        Level = LogLevel.Information,
+        Message = "Событие {EventId} сохранено в Inbox")]
+    public static partial void LogEventSavedToInbox(this ILogger logger, string eventId);
 }

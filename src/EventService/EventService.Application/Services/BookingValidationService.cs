@@ -1,5 +1,7 @@
-﻿using EventOrchestrationService.Contracts.Events;
+﻿using System.Text.Json;
+using EventOrchestrationService.Contracts.Events;
 using EventService.Application.Interfaces;
+using EventService.Domain.Entities;
 using EventService.Domain.Enums;
 using Microsoft.Extensions.Logging;
 using EventService.Infrastructure.Logging;
@@ -9,10 +11,18 @@ namespace EventService.Application.Services;
 public class BookingValidationService(
     IEventRepository eventRepository,
     IEventPublisher eventPublisher,
-    ILogger<BookingValidationService> logger) : IBookingValidationService
+    ILogger<BookingValidationService> logger,
+    IInboxRepository inboxRepository) : IBookingValidationService
 {
     public async Task ValidateBookingAsync(BookingCreatedEvent evt, CancellationToken cancellationToken)
     {
+        var eventId = $"{evt.BookingId}_{evt.EventId}";
+        if (await inboxRepository.ExistsAsync(eventId, "booking-created", cancellationToken))
+        {
+            logger.LogEventAlreadyProcessed(eventId);
+            return;
+        }
+
         var targetEvent = await eventRepository.GetByIdAsync(evt.EventId, cancellationToken);
 
         if (targetEvent == null)
@@ -35,6 +45,13 @@ public class BookingValidationService(
                 cancellationToken: cancellationToken
             );
             logger.LogBookingConfirmed(evt.BookingId, evt.EventId);
+
+            var inboxMessage = new InboxMessage(eventId, "booking-created", JsonSerializer.Serialize(evt));
+            await inboxRepository.AddAsync(inboxMessage, cancellationToken);
+            await eventRepository.SaveChangesAsync(cancellationToken);
+
+            logger.LogBookingConfirmed(evt.BookingId, evt.EventId);
+            logger.LogEventSavedToInbox(eventId);
         }
         else
         {
