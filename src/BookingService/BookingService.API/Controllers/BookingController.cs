@@ -12,6 +12,23 @@ namespace BookingService.API.Controllers;
 public class BookingController(IBookingService bookingService) : ApiControllerBase
 {
     /// <summary>
+    /// Создание бронирования.
+    /// </summary>
+    /// <param name="id">ID события.</param>
+    /// <param name="cancellationToken">Токен отмены.</param>
+    /// <returns>Информацию о созданном бронировании.</returns>
+    [HttpPost("events/{id:int}/book")]
+    public async Task<IActionResult> CreateBooking(int id, CancellationToken cancellationToken)
+    {
+        var userId = GetUserIdFromToken();
+
+        var booking = await bookingService.CreateBookingAsync(id, userId, cancellationToken);
+
+        Response.Headers.Location = $"/bookings/{booking.Id}";
+        return Accepted(new { booking.Id, booking.Status, booking.EventId });
+    }
+
+    /// <summary>
     /// Получить информацию о бронировании.
     /// </summary>
     /// <param name="id">ID бронирования.</param>

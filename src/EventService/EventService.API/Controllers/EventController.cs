@@ -13,23 +13,6 @@ public class EventController(IEventService eventService, IBookingService booking
     : ApiControllerBase
 {
     /// <summary>
-    /// Создание бронирования.
-    /// </summary>
-    /// <param name="id">ID события.</param>
-    /// <param name="cancellationToken">Токен отмены.</param>
-    /// <returns>Информацию о созданном бронировании.</returns>
-    [HttpPost("{id:int}/book")]
-    public async Task<IActionResult> CreateBooking(int id, CancellationToken cancellationToken)
-    {
-        var userId = GetUserIdFromToken();
-
-        var booking = await bookingService.CreateBookingAsync(id, userId, cancellationToken);
-
-        Response.Headers.Location = $"/bookings/{booking.Id}";
-        return Accepted(new { booking.Id, booking.Status, booking.EventId });
-    }
-
-    /// <summary>
     /// Получить список всех событий.
     /// </summary>
     /// <param name="title">Опциональный, получить события по полю title. Регистронезависимый, частичное совпадение.</param>
