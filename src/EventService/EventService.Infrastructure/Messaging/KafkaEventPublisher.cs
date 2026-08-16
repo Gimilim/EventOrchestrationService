@@ -1,14 +1,14 @@
 ﻿using System.Text.Json;
 using Confluent.Kafka;
-using BookingService.Application.Interfaces;
-using BookingService.Application.Settings;
-using BookingService.Infrastructure.Logging;
+using EventService.Application.Interfaces;
+using EventService.Application.Settings;
+using EventService.Infrastructure.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
 
-namespace BookingService.Infrastructure.Messaging;
+namespace EventService.Infrastructure.Messaging;
 
 public class KafkaEventPublisher : IEventPublisher
 {
@@ -45,8 +45,7 @@ public class KafkaEventPublisher : IEventPublisher
             );
     }
 
-    public async Task PublishAsync<T>(string topic, T message, string? key = null,
-        CancellationToken cancellationToken = default)
+    public async Task PublishAsync<T>(string topic, T message, string? key = null, CancellationToken cancellationToken = default)
     {
         var json = JsonSerializer.Serialize(message);
         var messageKey = key ?? Guid.NewGuid().ToString();

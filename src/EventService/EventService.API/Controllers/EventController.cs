@@ -1,4 +1,5 @@
-﻿using EventOrchestrationService.Contracts.Enums;
+﻿using EventOrchestrationService.Contracts.DTOs;
+using EventOrchestrationService.Contracts.Enums;
 using EventOrchestrationService.Contracts.Exceptions;
 using EventOrchestrationService.Contracts.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +10,7 @@ namespace EventService.API.Controllers;
 [ApiController]
 [Route("events")]
 [Authorize]
-public class EventController(IEventService eventService, IBookingService bookingService)
+public class EventController(IEventService eventService)
     : ApiControllerBase
 {
     /// <summary>
@@ -65,7 +66,7 @@ public class EventController(IEventService eventService, IBookingService booking
     /// <returns>Созданное событие.</returns>
     [HttpPost]
     [Authorize(Roles = nameof(Role.Admin))]
-    public async Task<IActionResult> Create([FromBody] CreateEventDto newEvent, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateEventContractDto newEvent, CancellationToken cancellationToken)
     {
         var createdEvent = await eventService.CreateEventAsync(newEvent, cancellationToken);
         return CreatedAtAction(nameof(GetEventById), new { id = createdEvent.Id }, createdEvent);
@@ -80,7 +81,7 @@ public class EventController(IEventService eventService, IBookingService booking
     /// <returns>Обновлённое событие.</returns>
     [HttpPut("{id:int}")]
     [Authorize(Roles = nameof(Role.Admin))]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateEventDto updateEventRequest,
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateEventContractDto updateEventRequest,
         CancellationToken cancellationToken)
     {
         var updatedEventResult = await eventService.UpdateEventAsync(id, updateEventRequest, cancellationToken);

@@ -1,6 +1,9 @@
 ﻿using EventService.Application.Interfaces;
+using EventService.Application.Services;
+using EventService.Application.Settings;
 using EventService.Infrastructure.Data;
 using EventService.Infrastructure.Data.Repositories;
+using EventService.Infrastructure.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,6 +36,13 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddScoped<IEventRepository, EventRepository>();
+
+        // Блок Кафки
+        services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));
+        services.AddHostedService<KafkaEventConsumer>();
+        services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
+
+        services.AddScoped<IBookingValidationService, BookingValidationService>();
 
         return services;
     }

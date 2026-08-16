@@ -21,4 +21,10 @@ public static partial class BookingLogs
         Level = LogLevel.Error,
         Message = "Ошибка при отправке события для брони {BookingId}")]
     public static partial void LogBookingPublishError(this ILogger logger, Exception exception, int bookingId);
+    
+    [LoggerMessage(
+        EventId = 1004,
+        Level = LogLevel.Warning,
+        Message = "Повторная попытка {RetryCount} через {DelaySeconds}с при отправке события бронирования")]
+    public static partial void LogPublishRetry(this ILogger logger, int retryCount, int delaySeconds, Exception exception);
 }
