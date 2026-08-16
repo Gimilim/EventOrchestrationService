@@ -63,4 +63,20 @@ public class BookingValidationService(
             cancellationToken: cancellationToken
         );
     }
+
+    public async Task HandleBookingCancelledAsync(BookingCancelledEvent evt, CancellationToken cancellationToken)
+    {
+        var targetEvent = await eventRepository.GetByIdAsync(evt.EventId, cancellationToken);
+
+        if (targetEvent == null)
+        {
+            logger.LogEventNotFound(evt.EventId, evt.BookingId);
+            return;
+        }
+
+        targetEvent.ReleaseSeats();
+        await eventRepository.SaveChangesAsync(cancellationToken);
+
+        logger.LogSeatsReleased(evt.EventId, evt.BookingId);
+    }
 }

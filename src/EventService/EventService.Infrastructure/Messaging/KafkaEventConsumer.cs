@@ -40,6 +40,7 @@ public class KafkaEventConsumer : BackgroundService
 
         _consumer = new ConsumerBuilder<string, string>(config).Build();
         _consumer.Subscribe("booking-created");
+        _consumer.Subscribe("booking-cancelled");
 
         _retryPolicy = Policy
             .Handle<Exception>(IsTransientException)
@@ -64,18 +65,41 @@ public class KafkaEventConsumer : BackgroundService
                 var consumeResult = _consumer.Consume(stoppingToken);
                 if (consumeResult?.Message?.Value == null) continue;
 
-                var evt = JsonSerializer.Deserialize<BookingCreatedEvent>(consumeResult.Message.Value);
-                if (evt == null) continue;
-
-                _logger.LogBookingReceived(evt.BookingId, evt.EventId);
-
-                await _retryPolicy.ExecuteAsync(async () =>
+                switch (consumeResult.Topic)
                 {
-                    await validationService.ValidateBookingAsync(evt, stoppingToken);
-                });
+                    case "booking-created":
+                    {
+                        var evt = JsonSerializer.Deserialize<BookingCreatedEvent>(consumeResult.Message.Value);
+                        if (evt == null) continue;
 
-                _consumer.Commit(consumeResult);
-                _logger.LogBookingProcessed(evt.BookingId);
+                        _logger.LogBookingReceived(evt.BookingId, evt.EventId);
+
+                        await _retryPolicy.ExecuteAsync(async () =>
+                        {
+                            await validationService.ValidateBookingAsync(evt, stoppingToken);
+                        });
+
+                        _consumer.Commit(consumeResult);
+                        _logger.LogBookingProcessed(evt.BookingId);
+                        break;
+                    }
+                    case "booking-cancelled":
+                    {
+                        var cancelledEvt =
+                            JsonSerializer.Deserialize<BookingCancelledEvent>(consumeResult.Message.Value);
+                        if (cancelledEvt == null) continue;
+
+                        _logger.LogBookingCancelledReceived(cancelledEvt.BookingId);
+
+                        await _retryPolicy.ExecuteAsync(async () =>
+                        {
+                            await validationService.HandleBookingCancelledAsync(cancelledEvt, stoppingToken);
+                        });
+
+                        _consumer.Commit(consumeResult);
+                        break;
+                    }
+                }
             }
             catch (Exception ex)
             {

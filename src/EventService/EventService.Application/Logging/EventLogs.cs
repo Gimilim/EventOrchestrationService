@@ -51,4 +51,16 @@ public static partial class EventLogs
         Level = LogLevel.Warning,
         Message = "Не удалось зарезервировать место для брони {BookingId}: {Reason}")]
     public static partial void LogReservationFailed(this ILogger logger, int bookingId, string reason);
+
+    [LoggerMessage(
+        EventId = 2009,
+        Level = LogLevel.Information,
+        Message = "Места возвращены для события {EventId} (бронь {BookingId})")]
+    public static partial void LogSeatsReleased(this ILogger logger, int eventId, int bookingId);
+
+    [LoggerMessage(
+        EventId = 2010,
+        Level = LogLevel.Information,
+        Message = "Получено событие отмены брони: BookingId={BookingId}")]
+    public static partial void LogBookingCancelledReceived(this ILogger logger, int bookingId);
 }

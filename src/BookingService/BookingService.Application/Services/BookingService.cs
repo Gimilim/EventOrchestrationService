@@ -64,5 +64,17 @@ public class BookingService(
         targetBooking.Cancel();
 
         await bookingRepository.SaveChangesAsync(cancellationToken);
+
+        await eventPublisher.PublishAsync(
+            "booking-cancelled",
+            new BookingCancelledEvent
+            {
+                BookingId = targetBooking.Id,
+                EventId = targetBooking.EventId,
+                UserId = targetBooking.UserId
+            },
+            key: targetBooking.EventId.ToString(),
+            cancellationToken: cancellationToken
+        );
     }
 }
