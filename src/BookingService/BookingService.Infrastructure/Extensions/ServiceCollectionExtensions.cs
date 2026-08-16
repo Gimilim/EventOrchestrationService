@@ -41,6 +41,7 @@ public static class ServiceCollectionExtensions
 
         // Блок Кафки
         services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));
+        services.AddHostedService<KafkaEventConsumer>();
         services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 
         services.AddHostedService<BookingBackgroundService>();
