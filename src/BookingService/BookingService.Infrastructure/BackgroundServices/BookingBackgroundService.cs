@@ -1,4 +1,6 @@
-﻿using BookingService.Application.Interfaces;
+﻿using System.Text.Json;
+using BookingService.Application.Interfaces;
+using BookingService.Domain.Entities;
 using BookingService.Infrastructure.Logging;
 using EventOrchestrationService.Contracts.Events;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,7 +12,7 @@ namespace BookingService.Infrastructure.BackgroundServices;
 public class BookingBackgroundService(
     IServiceScopeFactory scopeFactory,
     ILogger<BookingBackgroundService> logger,
-    IEventPublisher eventPublisher)
+    IOutboxRepository outboxRepository)
     : BackgroundService
 {
     private const int MaxRetryCount = 3;
@@ -32,6 +34,7 @@ public class BookingBackgroundService(
                 if (pendingBookings.Count == 0)
                 {
                     await Task.Delay(5000, cancellationToken);
+                    continue;
                 }
 
                 foreach (var booking in pendingBookings)
@@ -40,9 +43,7 @@ public class BookingBackgroundService(
                     {
                         booking.MarkAsFailed();
                         await bookingRepository.SaveChangesAsync(cancellationToken);
-
                         logger.LogFailedBooking(booking.Id, booking.RetryCount);
-
                         continue;
                     }
 
@@ -56,23 +57,16 @@ public class BookingBackgroundService(
                         CreatedAt = booking.CreatedAt
                     };
 
-                    try
-                    {
-                        await eventPublisher.PublishAsync(
-                            topic: "booking-created",
-                            message: evt,
-                            key: booking.EventId.ToString(),
-                            cancellationToken: cancellationToken
-                        );
+                    var outboxMessage = new OutboxMessage(
+                        topic: "booking-created",
+                        payload: JsonSerializer.Serialize(evt),
+                        key: booking.EventId.ToString()
+                    );
 
-                        logger.LogBookingRetry(booking.Id, booking.RetryCount);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogBookingPublishError(ex, booking.Id);
-                    }
-
+                    await outboxRepository.AddAsync(outboxMessage, cancellationToken);
                     await bookingRepository.SaveChangesAsync(cancellationToken);
+
+                    logger.LogBookingRetry(booking.Id, booking.RetryCount);
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
