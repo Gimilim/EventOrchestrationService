@@ -11,8 +11,7 @@ namespace BookingService.Infrastructure.BackgroundServices;
 
 public class BookingBackgroundService(
     IServiceScopeFactory scopeFactory,
-    ILogger<BookingBackgroundService> logger,
-    IOutboxRepository outboxRepository)
+    ILogger<BookingBackgroundService> logger)
     : BackgroundService
 {
     private const int MaxRetryCount = 3;
@@ -26,6 +25,7 @@ public class BookingBackgroundService(
             {
                 using var scope = scopeFactory.CreateScope();
                 var bookingRepository = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
+                var outboxRepository = scope.ServiceProvider.GetRequiredService<IOutboxRepository>();
 
                 var threshold = DateTime.UtcNow.Subtract(_retryDelay);
                 var pendingBookings =

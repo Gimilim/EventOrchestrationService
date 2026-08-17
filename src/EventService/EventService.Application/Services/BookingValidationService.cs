@@ -1,11 +1,9 @@
 ﻿using System.Text.Json;
 using EventOrchestrationService.Contracts.Events;
 using EventService.Application.Interfaces;
-using EventService.Application.Logging;
 using EventService.Domain.Entities;
 using EventService.Domain.Enums;
 using Microsoft.Extensions.Logging;
-using EventService.Infrastructure.Logging;
 using EventLogs = EventService.Application.Logging.EventLogs;
 
 namespace EventService.Application.Services;

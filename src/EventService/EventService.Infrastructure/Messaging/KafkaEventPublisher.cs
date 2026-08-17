@@ -3,7 +3,6 @@ using Confluent.Kafka;
 using EventService.Application.Interfaces;
 using EventService.Application.Logging;
 using EventService.Application.Settings;
-using EventService.Infrastructure.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;

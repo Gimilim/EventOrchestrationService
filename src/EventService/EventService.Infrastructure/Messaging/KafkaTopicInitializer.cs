@@ -2,7 +2,6 @@
 using Confluent.Kafka.Admin;
 using EventService.Application.Logging;
 using EventService.Application.Settings;
-using EventService.Infrastructure.Logging;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
