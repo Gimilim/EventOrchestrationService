@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Contracts\EventOrchestrationService.Contracts\EventOrchestrationService.Contracts.csproj" />
+      <ProjectReference Include="..\BookingService.Domain\BookingService.Domain.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="FluentValidation" Version="12.1.1" />
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+        <PackageReference Include="Microsoft.Extensions.Options" Version="11.0.0-preview.6.26359.118" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="DTOs\" />
+    </ItemGroup>
+
+</Project>
