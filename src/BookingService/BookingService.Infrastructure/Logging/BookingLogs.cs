@@ -88,4 +88,22 @@ public static partial class BookingLogs
         Level = LogLevel.Warning,
         Message = "Дубликат события {EventId} пропущен (уже обработан)")]
     public static partial void LogInboxDuplicateSkipped(this ILogger logger, string eventId);
+
+    [LoggerMessage(
+        EventId = 1017,
+        Level = LogLevel.Information,
+        Message = "Созданы топики: {Topics}")]
+    public static partial void LogTopicsCreated(this ILogger logger, string topics);
+
+    [LoggerMessage(
+        EventId = 1018,
+        Level = LogLevel.Information,
+        Message = "Все топики уже существуют")]
+    public static partial void LogTopicsAlreadyExist(this ILogger logger);
+
+    [LoggerMessage(
+        EventId = 1019,
+        Level = LogLevel.Error,
+        Message = "Ошибка при создании топиков Kafka")]
+    public static partial void LogTopicsCreationError(this ILogger logger, Exception exception);
 }

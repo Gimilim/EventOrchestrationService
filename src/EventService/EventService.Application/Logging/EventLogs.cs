@@ -75,4 +75,22 @@ public static partial class EventLogs
         Level = LogLevel.Information,
         Message = "Событие {EventId} сохранено в Inbox")]
     public static partial void LogEventSavedToInbox(this ILogger logger, string eventId);
+
+    [LoggerMessage(
+        EventId = 2013,
+        Level = LogLevel.Information,
+        Message = "Созданы топики: {Topics}")]
+    public static partial void LogTopicsCreated(this ILogger logger, string topics);
+
+    [LoggerMessage(
+        EventId = 2014,
+        Level = LogLevel.Information,
+        Message = "Все топики уже существуют")]
+    public static partial void LogTopicsAlreadyExist(this ILogger logger);
+
+    [LoggerMessage(
+        EventId = 2015,
+        Level = LogLevel.Error,
+        Message = "Ошибка при создании топиков Kafka")]
+    public static partial void LogTopicsCreationError(this ILogger logger, Exception exception);
 }

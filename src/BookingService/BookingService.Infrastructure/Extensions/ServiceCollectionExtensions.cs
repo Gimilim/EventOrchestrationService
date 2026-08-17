@@ -46,6 +46,7 @@ public static class ServiceCollectionExtensions
         services.AddHostedService<KafkaEventConsumer>();
         services.AddHostedService<OutboxProcessor>();
         services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
+        services.AddHostedService<KafkaTopicInitializer>();
 
         services.AddHostedService<BookingBackgroundService>();
 

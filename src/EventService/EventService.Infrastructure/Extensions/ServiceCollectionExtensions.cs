@@ -42,6 +42,7 @@ public static class ServiceCollectionExtensions
         services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));
         services.AddHostedService<KafkaEventConsumer>();
         services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
+        services.AddHostedService<KafkaTopicInitializer>();
 
         services.AddScoped<IBookingValidationService, BookingValidationService>();
 
