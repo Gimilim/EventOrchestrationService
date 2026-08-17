@@ -59,11 +59,11 @@ public class KafkaEventConsumer : BackgroundService
         {
             try
             {
-                using var scope = _scopeFactory.CreateScope();
-                var validationService = scope.ServiceProvider.GetRequiredService<IBookingValidationService>();
-
                 var consumeResult = _consumer.Consume(stoppingToken);
                 if (consumeResult?.Message?.Value == null) continue;
+
+                using var scope = _scopeFactory.CreateScope();
+                var validationService = scope.ServiceProvider.GetRequiredService<IBookingValidationService>();
 
                 switch (consumeResult.Topic)
                 {
