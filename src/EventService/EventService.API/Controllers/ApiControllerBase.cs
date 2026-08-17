@@ -1,6 +1,6 @@
-﻿using System.Security.Claims;
-using EventOrchestrationService.Contracts.Exceptions;
+﻿using EventOrchestrationService.Contracts.Exceptions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace EventService.API.Controllers;
 
@@ -10,7 +10,7 @@ public abstract class ApiControllerBase : ControllerBase
 {
     protected int GetUserIdFromToken()
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
 
         if (string.IsNullOrEmpty(userIdClaim))
             throw new UnauthorizedException("ИД пользователя не найден в токене.");
