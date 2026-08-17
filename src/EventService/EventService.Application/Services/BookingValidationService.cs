@@ -1,10 +1,12 @@
 ﻿using System.Text.Json;
 using EventOrchestrationService.Contracts.Events;
 using EventService.Application.Interfaces;
+using EventService.Application.Logging;
 using EventService.Domain.Entities;
 using EventService.Domain.Enums;
 using Microsoft.Extensions.Logging;
 using EventService.Infrastructure.Logging;
+using EventLogs = EventService.Application.Logging.EventLogs;
 
 namespace EventService.Application.Services;
 
@@ -19,7 +21,7 @@ public class BookingValidationService(
         var eventId = $"{evt.BookingId}_{evt.EventId}";
         if (await inboxRepository.ExistsAsync(eventId, "booking-created", cancellationToken))
         {
-            logger.LogEventAlreadyProcessed(eventId);
+            EventLogs.LogEventAlreadyProcessed((ILogger)logger, eventId);
             return;
         }
 
@@ -28,7 +30,7 @@ public class BookingValidationService(
         if (targetEvent == null)
         {
             await PublishRejectedAsync(evt, $"Событие с ID {evt.EventId} не найдено", cancellationToken);
-            logger.LogEventNotFound(evt.EventId, evt.BookingId);
+            EventLogs.LogEventNotFound((ILogger)logger, evt.EventId, evt.BookingId);
             return;
         }
 
@@ -56,8 +58,8 @@ public class BookingValidationService(
                     cancellationToken: cancellationToken
                 );
 
-                logger.LogBookingConfirmed(evt.BookingId, evt.EventId);
-                logger.LogEventSavedToInbox(eventId);
+                EventLogs.LogBookingConfirmed((ILogger)logger, evt.BookingId, evt.EventId);
+                EventLogs.LogEventSavedToInbox((ILogger)logger, eventId);
             }
             catch
             {
@@ -75,7 +77,7 @@ public class BookingValidationService(
             };
 
             await PublishRejectedAsync(evt, reason, cancellationToken);
-            logger.LogReservationFailed(evt.BookingId, reason);
+            EventLogs.LogReservationFailed((ILogger)logger, evt.BookingId, reason);
         }
     }
 
@@ -99,7 +101,7 @@ public class BookingValidationService(
 
         if (targetEvent == null)
         {
-            logger.LogEventNotFound(evt.EventId, evt.BookingId);
+            EventLogs.LogEventNotFound((ILogger)logger, evt.EventId, evt.BookingId);
             return;
         }
 
@@ -116,7 +118,7 @@ public class BookingValidationService(
             await eventRepository.SaveChangesAsync(cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
-            logger.LogSeatsReleased(evt.EventId, evt.BookingId);
+            EventLogs.LogSeatsReleased((ILogger)logger, evt.EventId, evt.BookingId);
         }
         catch
         {

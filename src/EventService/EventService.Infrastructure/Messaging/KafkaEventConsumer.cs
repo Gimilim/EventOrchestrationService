@@ -1,7 +1,6 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using EventOrchestrationService.Contracts.Events;
 using EventService.Application.Settings;
-using EventService.Infrastructure.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -10,6 +9,7 @@ using Polly;
 using Polly.Retry;
 using System.Text.Json;
 using EventService.Application.Interfaces;
+using EventService.Application.Logging;
 
 namespace EventService.Infrastructure.Messaging;
 

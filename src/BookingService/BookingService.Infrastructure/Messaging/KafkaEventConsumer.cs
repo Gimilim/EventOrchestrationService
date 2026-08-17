@@ -96,7 +96,8 @@ public class KafkaEventConsumer : BackgroundService
                             booking.Confirm();
                             await bookingRepository.SaveChangesAsync(stoppingToken);
 
-                            var inboxMessage = new InboxMessage(inboxEventId, consumeResult.Topic, consumeResult.Message.Value);
+                            var inboxMessage = new InboxMessage(inboxEventId, consumeResult.Topic,
+                                consumeResult.Message.Value);
                             await inboxRepository.AddAsync(inboxMessage, stoppingToken);
                             await bookingRepository.SaveChangesAsync(stoppingToken);
                         });

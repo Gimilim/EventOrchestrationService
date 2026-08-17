@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace EventService.Infrastructure.Logging;
+namespace EventService.Application.Logging;
 
 public static partial class EventLogs
 {
@@ -27,12 +27,13 @@ public static partial class EventLogs
         Level = LogLevel.Warning,
         Message = "Повторная попытка {RetryCount} через {DelaySeconds}с при обработке события бронирования")]
     public static partial void LogRetry(this ILogger logger, int retryCount, int delaySeconds);
-    
+
     [LoggerMessage(
         EventId = 2005,
         Level = LogLevel.Warning,
         Message = "Повторная попытка {RetryCount} через {DelaySeconds}с при отправке события")]
-    public static partial void LogPublishRetry(this ILogger logger, int retryCount, int delaySeconds, Exception exception);
+    public static partial void LogPublishRetry(this ILogger logger, int retryCount, int delaySeconds,
+        Exception exception);
 
     [LoggerMessage(
         EventId = 2006,
