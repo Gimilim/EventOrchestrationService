@@ -9,4 +9,5 @@ public interface IOutboxRepository
     Task MarkAsProcessedAsync(Guid id, CancellationToken cancellationToken = default);
     Task IncrementAttemptsAsync(Guid id, CancellationToken cancellationToken = default);
     Task<ITransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -39,4 +39,9 @@ public class OutboxRepository(AppDbContext dbContext) : IOutboxRepository
         var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         return new EntityFrameworkTransaction(transaction);
     }
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

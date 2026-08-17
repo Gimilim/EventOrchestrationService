@@ -30,15 +30,27 @@ public class OutboxProcessor(
                 {
                     try
                     {
-                        await eventPublisher.PublishAsync(
-                            topic: message.Topic,
-                            message: JsonSerializer.Deserialize<object>(message.Payload)!,
-                            key: message.Key,
-                            cancellationToken: stoppingToken
-                        );
+                        await using var transaction = await outboxRepository.BeginTransactionAsync(stoppingToken);
+                        try
+                        {
+                            await eventPublisher.PublishAsync(
+                                topic: message.Topic,
+                                message: JsonSerializer.Deserialize<object>(message.Payload)!,
+                                key: message.Key,
+                                cancellationToken: stoppingToken
+                            );
 
-                        await outboxRepository.MarkAsProcessedAsync(message.Id, stoppingToken);
-                        logger.LogOutboxMessageSent(message.Id, message.Topic);
+                            await outboxRepository.MarkAsProcessedAsync(message.Id, stoppingToken);
+                            await outboxRepository.SaveChangesAsync(stoppingToken);
+
+                            await transaction.CommitAsync(stoppingToken);
+                            logger.LogOutboxMessageSent(message.Id, message.Topic);
+                        }
+                        catch
+                        {
+                            await transaction.RollbackAsync(stoppingToken);
+                            throw;
+                        }
                     }
                     catch (Exception ex)
                     {

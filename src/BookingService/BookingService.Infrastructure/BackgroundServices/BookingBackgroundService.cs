@@ -63,10 +63,20 @@ public class BookingBackgroundService(
                         key: booking.EventId.ToString()
                     );
 
-                    await outboxRepository.AddAsync(outboxMessage, cancellationToken);
-                    await bookingRepository.SaveChangesAsync(cancellationToken);
+                    await using var transaction = await outboxRepository.BeginTransactionAsync(cancellationToken);
+                    try
+                    {
+                        await outboxRepository.AddAsync(outboxMessage, cancellationToken);
+                        await bookingRepository.SaveChangesAsync(cancellationToken);
 
-                    logger.LogBookingRetry(booking.Id, booking.RetryCount);
+                        await transaction.CommitAsync(cancellationToken);
+                        logger.LogBookingRetry(booking.Id, booking.RetryCount);
+                    }
+                    catch
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        throw;
+                    }
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
