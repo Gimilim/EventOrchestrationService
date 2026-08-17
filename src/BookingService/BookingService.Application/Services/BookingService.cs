@@ -22,24 +22,36 @@ public class BookingService(
 
         var createdBooking = new Booking(eventId, userId, BookingStatus.Pending);
 
-        await bookingRepository.AddAsync(createdBooking, cancellationToken);
-        await bookingRepository.SaveChangesAsync(cancellationToken);
+        await using var transaction = await bookingRepository.BeginTransactionAsync(cancellationToken);
 
-        var evt = new BookingCreatedEvent
+        try
         {
-            BookingId = createdBooking.Id,
-            EventId = eventId,
-            UserId = userId,
-            CreatedAt = createdBooking.CreatedAt
-        };
+            await bookingRepository.AddAsync(createdBooking, cancellationToken);
+            await bookingRepository.SaveChangesAsync(cancellationToken);
 
-        var outboxMessage = new OutboxMessage(
-            topic: "booking-created",
-            payload: JsonSerializer.Serialize(evt),
-            key: eventId.ToString()
-        );
-        await outboxRepository.AddAsync(outboxMessage, cancellationToken);
-        await bookingRepository.SaveChangesAsync(cancellationToken);
+            var evt = new BookingCreatedEvent
+            {
+                BookingId = createdBooking.Id,
+                EventId = eventId,
+                UserId = userId,
+                CreatedAt = createdBooking.CreatedAt
+            };
+
+            var outboxMessage = new OutboxMessage(
+                topic: "booking-created",
+                payload: JsonSerializer.Serialize(evt),
+                key: eventId.ToString()
+            );
+            await outboxRepository.AddAsync(outboxMessage, cancellationToken);
+            await bookingRepository.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
 
         return createdBooking;
     }
@@ -71,20 +83,31 @@ public class BookingService(
 
         targetBooking.Cancel();
 
-        var evt = new BookingCancelledEvent
+        await using var transaction = await bookingRepository.BeginTransactionAsync(cancellationToken);
+
+        try
         {
-            BookingId = targetBooking.Id,
-            EventId = targetBooking.EventId,
-            UserId = targetBooking.UserId
-        };
+            await bookingRepository.SaveChangesAsync(cancellationToken);
+            var evt = new BookingCancelledEvent
+            {
+                BookingId = targetBooking.Id,
+                EventId = targetBooking.EventId,
+                UserId = targetBooking.UserId
+            };
 
-        var outboxMessage = new OutboxMessage(
-            topic: "booking-cancelled",
-            payload: JsonSerializer.Serialize(evt),
-            key: targetBooking.EventId.ToString()
-        );
+            var outboxMessage = new OutboxMessage(
+                topic: "booking-cancelled",
+                payload: JsonSerializer.Serialize(evt),
+                key: targetBooking.EventId.ToString()
+            );
 
-        await outboxRepository.AddAsync(outboxMessage, cancellationToken);
-        await bookingRepository.SaveChangesAsync(cancellationToken);
+            await outboxRepository.AddAsync(outboxMessage, cancellationToken);
+            await bookingRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 }

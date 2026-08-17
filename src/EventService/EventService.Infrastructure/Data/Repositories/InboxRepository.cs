@@ -1,5 +1,6 @@
 ﻿using EventService.Application.Interfaces;
 using EventService.Domain.Entities;
+using EventService.Infrastructure.Data.Transactions;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventService.Infrastructure.Data.Repositories;
@@ -15,5 +16,11 @@ public class InboxRepository(AppDbContext dbContext) : IInboxRepository
     public async Task AddAsync(InboxMessage message, CancellationToken cancellationToken = default)
     {
         await dbContext.InboxMessages.AddAsync(message, cancellationToken);
+    }
+
+    public async Task<ITransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        return new EntityFrameworkTransaction(transaction);
     }
 }

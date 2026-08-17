@@ -8,4 +8,5 @@ public interface IOutboxRepository
     Task<IEnumerable<OutboxMessage>> GetUnprocessedAsync(int batchSize = 100, CancellationToken cancellationToken = default);
     Task MarkAsProcessedAsync(Guid id, CancellationToken cancellationToken = default);
     Task IncrementAttemptsAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<ITransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
 }

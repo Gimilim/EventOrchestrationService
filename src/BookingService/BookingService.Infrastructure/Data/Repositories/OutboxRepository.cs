@@ -1,5 +1,6 @@
 ﻿using BookingService.Application.Interfaces;
 using BookingService.Domain.Entities;
+using BookingService.Infrastructure.Data.Transactions;
 using Microsoft.EntityFrameworkCore;
 
 namespace BookingService.Infrastructure.Data.Repositories;
@@ -31,5 +32,11 @@ public class OutboxRepository(AppDbContext dbContext) : IOutboxRepository
     {
         var message = await dbContext.OutboxMessages.FindAsync([id], cancellationToken);
         message?.IncrementAttempts();
+    }
+
+    public async Task<ITransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        return new EntityFrameworkTransaction(transaction);
     }
 }

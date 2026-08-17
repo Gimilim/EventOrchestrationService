@@ -18,4 +18,5 @@ public interface IEventRepository
         int page = 1,
         int pageSize = 10,
         CancellationToken cancellationToken = default);
+    Task<ITransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
 }

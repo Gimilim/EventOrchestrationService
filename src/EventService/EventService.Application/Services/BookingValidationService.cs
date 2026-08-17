@@ -36,22 +36,34 @@ public class BookingValidationService(
 
         if (reserveResult == ReservationResult.Success)
         {
-            await eventRepository.SaveChangesAsync(cancellationToken);
+            await using var transaction = await eventRepository.BeginTransactionAsync(cancellationToken);
 
-            await eventPublisher.PublishAsync(
-                "booking-confirmed",
-                new BookingConfirmedEvent { BookingId = evt.BookingId },
-                key: evt.EventId.ToString(),
-                cancellationToken: cancellationToken
-            );
-            logger.LogBookingConfirmed(evt.BookingId, evt.EventId);
+            try
+            {
+                await eventRepository.SaveChangesAsync(cancellationToken);
 
-            var inboxMessage = new InboxMessage(eventId, "booking-created", JsonSerializer.Serialize(evt));
-            await inboxRepository.AddAsync(inboxMessage, cancellationToken);
-            await eventRepository.SaveChangesAsync(cancellationToken);
+                var inboxMessage = new InboxMessage(eventId, "booking-created", JsonSerializer.Serialize(evt));
 
-            logger.LogBookingConfirmed(evt.BookingId, evt.EventId);
-            logger.LogEventSavedToInbox(eventId);
+                await inboxRepository.AddAsync(inboxMessage, cancellationToken);
+                await eventRepository.SaveChangesAsync(cancellationToken);
+
+                await transaction.CommitAsync(cancellationToken);
+
+                await eventPublisher.PublishAsync(
+                    "booking-confirmed",
+                    new BookingConfirmedEvent { BookingId = evt.BookingId },
+                    key: evt.EventId.ToString(),
+                    cancellationToken: cancellationToken
+                );
+
+                logger.LogBookingConfirmed(evt.BookingId, evt.EventId);
+                logger.LogEventSavedToInbox(eventId);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
         }
         else
         {
@@ -91,9 +103,25 @@ public class BookingValidationService(
             return;
         }
 
-        targetEvent.ReleaseSeats();
-        await eventRepository.SaveChangesAsync(cancellationToken);
+        await using var transaction = await eventRepository.BeginTransactionAsync(cancellationToken);
 
-        logger.LogSeatsReleased(evt.EventId, evt.BookingId);
+        try
+        {
+            targetEvent.ReleaseSeats();
+            await eventRepository.SaveChangesAsync(cancellationToken);
+
+            var eventId = $"cancelled_{evt.BookingId}_{evt.EventId}";
+            var inboxMessage = new InboxMessage(eventId, "booking-cancelled", JsonSerializer.Serialize(evt));
+            await inboxRepository.AddAsync(inboxMessage, cancellationToken);
+            await eventRepository.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+            logger.LogSeatsReleased(evt.EventId, evt.BookingId);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 }

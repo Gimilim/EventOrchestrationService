@@ -1,6 +1,7 @@
 ﻿using BookingService.Application.Interfaces;
 using BookingService.Domain.Entities;
 using BookingService.Domain.Enums;
+using BookingService.Infrastructure.Data.Transactions;
 using EventOrchestrationService.Contracts.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -51,5 +52,11 @@ public class BookingRepository(AppDbContext dbContext) : IBookingRepository
             .Where(b => b.Status == BookingStatus.Pending && b.CreatedAt < threshold)
             .OrderBy(b => b.CreatedAt)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<ITransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        return new EntityFrameworkTransaction(transaction);
     }
 }

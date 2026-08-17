@@ -1,6 +1,7 @@
 ﻿using EventOrchestrationService.Contracts.Exceptions;
 using EventService.Application.Interfaces;
 using EventService.Domain.Entities;
+using EventService.Infrastructure.Data.Transactions;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventService.Infrastructure.Data.Repositories;
@@ -84,5 +85,11 @@ public class EventRepository(AppDbContext dbContext) : IEventRepository
         var totalCount = await query.CountAsync(cancellationToken);
 
         return (items, totalCount);
+    }
+
+    public async Task<ITransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        return new EntityFrameworkTransaction(transaction);
     }
 }
