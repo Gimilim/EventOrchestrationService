@@ -42,7 +42,6 @@ public class KafkaEventConsumer : BackgroundService
         _consumer = new ConsumerBuilder<string, string>(config).Build();
         _consumer.Subscribe("booking-confirmed");
         _consumer.Subscribe("booking-rejected");
-        _consumer.Subscribe("booking-cancelled");
 
         _retryPolicy = Policy
             .Handle<Exception>(IsTransientException)
