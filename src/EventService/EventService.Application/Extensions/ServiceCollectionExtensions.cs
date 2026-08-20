@@ -1,4 +1,4 @@
-﻿using EventOrchestrationService.Contracts.Interfaces;
+﻿using EventService.Application.Interfaces;
 using EventService.Application.Mappings;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;

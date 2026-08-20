@@ -1,6 +1,5 @@
 using AutoMapper;
 using EventOrchestrationService.Contracts.DTOs;
-using EventOrchestrationService.Contracts.Interfaces;
 using EventService.Application.Interfaces;
 using EventService.Domain.Entities;
 using FluentValidation;
@@ -120,5 +119,23 @@ public class EventService(
 
         await cache.RemoveAsync($"{CacheKeyPrefix}:{id}", cancellationToken);
         return true;
+    }
+
+    public async Task<List<EventContractDto>> GetTop10Async(CancellationToken cancellationToken)
+    {
+        var cacheKey = $"{CacheKeyPrefix}:'top10'";
+
+        var cached = await cache.GetAsync<List<EventContractDto>>(cacheKey, cancellationToken);
+        if (cached != null)
+        {
+            return cached;
+        }
+
+        var top10Events = await eventRepository.GetTop10Async(cancellationToken);
+        var result = mapper.Map<List<EventContractDto>>(top10Events);
+
+        await cache.SetAsync(cacheKey, result, TimeSpan.FromDays(1), cancellationToken: cancellationToken);
+
+        return result;
     }
 }
