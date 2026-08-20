@@ -1,12 +1,15 @@
 ﻿using System.Text.Json;
 using EventService.Application.Interfaces;
 using EventService.Application.Logging;
+using EventService.Application.Settings;
+using EventService.Infrastructure.Redis;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
 namespace EventService.Infrastructure.Caching;
 
-public class RedisCacheService(IConnectionMultiplexer redis, ILogger<RedisCacheService> logger)
+public class RedisCacheService(IConnectionMultiplexer redis, ILogger<RedisCacheService> logger, IOptions<RedisSettings> redisSettings)
     : ICacheService
 {
     private readonly IConnectionMultiplexer _redis = redis;
@@ -31,7 +34,9 @@ public class RedisCacheService(IConnectionMultiplexer redis, ILogger<RedisCacheS
         try
         {
             var json = JsonSerializer.Serialize(value);
-            await _database.StringSetAsync(key, json, expiration ?? TimeSpan.FromMinutes(5));
+
+            var defaultCacheTtl = redisSettings.Value.GetDefaultCacheTtl();
+            await _database.StringSetAsync(key, json, expiration ?? defaultCacheTtl);
         }
         catch (Exception ex)
         {

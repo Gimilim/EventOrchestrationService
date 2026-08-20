@@ -13,7 +13,12 @@ public static class RedisSettingsExtensions
             Password = settings.Password,
             ConnectTimeout = settings.ConnectTimeout,
             SyncTimeout = settings.SyncTimeout,
-            AbortOnConnectFail = settings.AbortOnConnectFail
+            AbortOnConnectFail = settings.AbortOnConnectFail,
         };
+    }
+
+    public static TimeSpan GetDefaultCacheTtl(this RedisSettings settings)
+    {
+        return TimeSpan.FromMinutes(settings.DefaultCacheTtlMinutes);
     }
 }

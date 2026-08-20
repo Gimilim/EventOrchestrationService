@@ -8,4 +8,5 @@ public class RedisSettings
     public int ConnectTimeout { get; set; } = 5000;
     public int SyncTimeout { get; set; } = 3000;
     public bool AbortOnConnectFail { get; set; } = false;
+    public int DefaultCacheTtlMinutes { get; set; } = 5;
 }
