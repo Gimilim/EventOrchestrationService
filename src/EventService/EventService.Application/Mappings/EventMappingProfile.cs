@@ -9,7 +9,9 @@ public class EventMappingProfile : Profile
     public EventMappingProfile()
     {
         CreateMap<Event, EventContractDto>();
-        CreateMap<CreateEventContractDto, Event>();
-        CreateMap<UpdateEventContractDto, Event>();
+        CreateMap<CreateEventContractDto, Event>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore());
+        CreateMap<UpdateEventContractDto, Event>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore());
     }
 }
