@@ -1,6 +1,7 @@
 ﻿using EventService.Application.Interfaces;
 using EventService.Application.Services;
 using EventService.Application.Settings;
+using EventService.Infrastructure.Caching;
 using EventService.Infrastructure.Data;
 using EventService.Infrastructure.Data.Repositories;
 using EventService.Infrastructure.Messaging;
@@ -57,6 +58,7 @@ public static class ServiceCollectionExtensions
 
             return ConnectionMultiplexer.Connect(options);
         });
+        services.AddSingleton<ICacheService, RedisCacheService>();
 
         services.AddScoped<IBookingValidationService, BookingValidationService>();
 
