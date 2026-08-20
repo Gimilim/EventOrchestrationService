@@ -4,6 +4,7 @@ using EventService.Application.Settings;
 using EventService.Infrastructure.Caching;
 using EventService.Infrastructure.Data;
 using EventService.Infrastructure.Data.Repositories;
+using EventService.Infrastructure.Data.UnitOfWork;
 using EventService.Infrastructure.Messaging;
 using EventService.Infrastructure.Redis;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +41,9 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IInboxRepository, InboxRepository>();
+        
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
 
         // Блок Кафки
         services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));

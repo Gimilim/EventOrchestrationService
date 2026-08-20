@@ -11,9 +11,13 @@ public class EventService(
     IValidator<CreateEventContractDto> createValidator,
     IValidator<UpdateEventContractDto> updateValidator,
     IEventRepository eventRepository,
-    IMapper mapper)
+    IMapper mapper,
+    ICacheService cache,
+    IUnitOfWork unitOfWork)
     : IEventService
 {
+    private const string CacheKeyPrefix = "event";
+
     public async Task<PaginatedResult<EventContractDto>> GetEventsAsync(string? title = null, DateTime? from = null,
         DateTime? to = null,
         int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
@@ -32,10 +36,26 @@ public class EventService(
 
     public async Task<EventContractDto?> GetEventByIdAsync(int id, CancellationToken cancellationToken)
     {
+        var cacheKey = $"{CacheKeyPrefix}:{id}";
+
+        var cached = await cache.GetAsync<EventContractDto>(cacheKey, cancellationToken);
+        if (cached != null)
+        {
+            return cached;
+        }
+
         var existingEvent = await eventRepository.GetByIdAsync(id, cancellationToken);
-        return existingEvent == null
-            ? null
-            : mapper.Map<EventContractDto>(existingEvent);
+
+        if (existingEvent == null)
+        {
+            return null;
+        }
+
+        var result = mapper.Map<EventContractDto>(existingEvent);
+
+        await cache.SetAsync(cacheKey, result, cancellationToken: cancellationToken);
+
+        return result;
     }
 
     public async Task<EventContractDto> CreateEventAsync(CreateEventContractDto dto, CancellationToken cancellationToken)
@@ -53,38 +73,52 @@ public class EventService(
     public async Task<EventContractDto?> UpdateEventAsync(int id, UpdateEventContractDto dto, CancellationToken cancellationToken)
     {
         await updateValidator.ValidateAndThrowAsync(dto, cancellationToken);
+        EventContractDto? result = null;
 
-        var existingEvent = await eventRepository.GetByIdAsync(id, cancellationToken);
-
-        if (existingEvent == null)
+        await using (var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken))
         {
-            return null;
+            var existingEvent = await eventRepository.GetByIdAsync(id, cancellationToken);
+
+            if (existingEvent == null)
+            {
+                return null;
+            }
+
+            existingEvent.Update(
+                dto.Title,
+                dto.Description,
+                dto.StartAt,
+                dto.EndAt,
+                dto.TotalSeats
+            );
+
+            result = mapper.Map<EventContractDto>(existingEvent);
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
 
-        existingEvent.Update(
-            dto.Title,
-            dto.Description,
-            dto.StartAt,
-            dto.EndAt,
-            dto.TotalSeats
-        );
-
-        await eventRepository.SaveChangesAsync(cancellationToken);
-
-        return mapper.Map<EventContractDto>(existingEvent);
+        await cache.RemoveAsync($"{CacheKeyPrefix}:{id}", cancellationToken);
+        return result;
     }
 
     public async Task<bool> DeleteEventAsync(int id, CancellationToken cancellationToken)
     {
-        var targetEvent = await eventRepository.GetByIdAsync(id, cancellationToken);
-        if (targetEvent == null)
+        await using (var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken))
         {
-            return false;
+            var targetEvent = await eventRepository.GetByIdAsync(id, cancellationToken);
+            if (targetEvent == null)
+            {
+                return false;
+            }
+
+            await eventRepository.DeleteAsync(targetEvent);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
         }
 
-        await eventRepository.DeleteAsync(targetEvent);
-        await eventRepository.SaveChangesAsync(cancellationToken);
-
+        await cache.RemoveAsync($"{CacheKeyPrefix}:{id}", cancellationToken);
         return true;
     }
 }
