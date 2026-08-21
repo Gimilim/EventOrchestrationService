@@ -4,6 +4,7 @@ using EventService.Application.Interfaces;
 using EventService.Application.Mappings;
 using EventService.Application.Validators;
 using EventService.Domain.Entities;
+using EventService.Domain.Enums;
 using EventService.Infrastructure.Data;
 using EventService.Infrastructure.Data.Repositories;
 using EventService.Infrastructure.Data.UnitOfWork;
@@ -517,5 +518,41 @@ public class EventServiceTests : IDisposable
         await Assert.ThrowsAsync<FluentValidation.ValidationException>(() =>
             _service.UpdateEventAsync(created.Id, updateDto, CancellationToken.None)
         );
+    }
+
+    /// <summary>
+    /// Тест на защиту от овербукинга: 20 конкурентных запросов на 5 мест
+    /// Ожидается: ровно 5 успешных броней, 15 исключений, AvailableSeats = 0
+    /// </summary>
+    [Fact]
+    public async Task TryReserveSeats_ConcurrentRequests_PreventsOverbooking()
+    {
+        // Arrange
+        var testEvent = new Event(
+            title: "Test Event",
+            description: "Test Description",
+            startAt: DateTime.UtcNow.AddDays(1),
+            endAt: DateTime.UtcNow.AddDays(2),
+            totalSeats: 5
+        );
+
+        const int concurrentRequests = 20;
+        var tasks = new List<Task<ReservationResult>>();
+
+        // Act
+        for (int i = 0; i < concurrentRequests; i++)
+        {
+            tasks.Add(Task.Run(() => testEvent.TryReserveSeats()));
+        }
+
+        var results = await Task.WhenAll(tasks);
+
+        // Assert
+        var successful = results.Count(r => r == ReservationResult.Success);
+        var noSeats = results.Count(r => r == ReservationResult.NoAvailableSeats);
+
+        Assert.Equal(5, successful);
+        Assert.Equal(15, noSeats);
+        Assert.Equal(0, testEvent.AvailableSeats);
     }
 }
