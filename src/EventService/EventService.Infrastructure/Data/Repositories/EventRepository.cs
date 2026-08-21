@@ -100,7 +100,7 @@ public class EventRepository(AppDbContext dbContext) : IEventRepository
 
         var topEvents = await query
             .Where(e => e.TotalSeats > 0)
-            .OrderByDescending(e => (e.TotalSeats - e.AvailableSeats) / e.TotalSeats)
+            .OrderByDescending(e => (e.TotalSeats - e.AvailableSeats) / (double)e.TotalSeats)
             .Take(10)
             .ToListAsync(cancellationToken);
 

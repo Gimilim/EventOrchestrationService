@@ -46,7 +46,7 @@ public class EventController(IEventService eventService)
     /// Топ-10 событий
     /// </returns>
     /// <response code="200">Успешный возврат топ-10 событий</response>
-    [HttpGet]
+    [HttpGet("top")]
     [AllowAnonymous]
     public async Task<IActionResult> GetTop(CancellationToken cancellationToken = default)
     {
