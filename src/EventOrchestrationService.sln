@@ -40,6 +40,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventService.IntegrationTes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventService.UnitTests", "EventService\EventService.UnitTests\EventService.UnitTests.csproj", "{2BBF04C7-B1C3-4996-AE0F-46A2B374EB1E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookingService.UnitTests", "BookingService\BookingService.UnitTests\BookingService.UnitTests.csproj", "{F9B17B33-2AE8-4FBE-9F6D-121F92DADA75}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -110,6 +112,10 @@ Global
 		{2BBF04C7-B1C3-4996-AE0F-46A2B374EB1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2BBF04C7-B1C3-4996-AE0F-46A2B374EB1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2BBF04C7-B1C3-4996-AE0F-46A2B374EB1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9B17B33-2AE8-4FBE-9F6D-121F92DADA75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9B17B33-2AE8-4FBE-9F6D-121F92DADA75}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9B17B33-2AE8-4FBE-9F6D-121F92DADA75}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9B17B33-2AE8-4FBE-9F6D-121F92DADA75}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{B1966A7D-7BE1-4458-B03E-5FF39E5E27EE} = {2E194C0C-89E6-4546-A06E-0ACFCA324B5D}
@@ -128,5 +134,6 @@ Global
 		{27860EAF-7BA0-4FB3-B1D7-0F3671A00F13} = {9D947271-66E8-4E92-A8F0-525E915F2060}
 		{85B35519-2484-484F-8139-03B9CA49A086} = {73FBC12F-B93F-4727-A417-F8BCD97FD0F3}
 		{2BBF04C7-B1C3-4996-AE0F-46A2B374EB1E} = {73FBC12F-B93F-4727-A417-F8BCD97FD0F3}
+		{F9B17B33-2AE8-4FBE-9F6D-121F92DADA75} = {9D947271-66E8-4E92-A8F0-525E915F2060}
 	EndGlobalSection
 EndGlobal
