@@ -381,4 +381,34 @@ public class BookingServiceTests
         // Assert
         Assert.Equal(0, count);
     }
+
+    /// <summary>
+    /// Тест на уникальность Id при конкурентных запросах
+    /// Дано: 10 одновременных запросов на создание брони
+    /// Ожидается: 10 броней с уникальными Id
+    /// </summary>
+    [Fact]
+    public async Task CreateBookingAsync_ConcurrentRequests_AllBookingsHaveUniqueIds()
+    {
+        // Arrange
+        const int eventId = 1;
+        const int userId = 1;
+        const int requestsCount = 10;
+
+        var tasks = new List<Task<Booking>>();
+
+        // Act
+        for (int i = 0; i < requestsCount; i++)
+        {
+            tasks.Add(_bookingService.CreateBookingAsync(eventId, userId, CancellationToken.None));
+        }
+
+        var bookings = await Task.WhenAll(tasks);
+
+        // Assert
+        Assert.Equal(requestsCount, bookings.Length);
+
+        var uniqueIds = bookings.Select(b => b.Id).Distinct();
+        Assert.Equal(requestsCount, uniqueIds.Count());
+    }
 }
