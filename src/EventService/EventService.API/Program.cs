@@ -88,7 +88,7 @@ if (builder.Environment.IsDevelopment())
 }
 
 builder.Services.AddOpenTelemetry()
-    .ConfigureResource(r => r.AddService(serviceName: "booking-service"))
+    .ConfigureResource(r => r.AddService(serviceName: "event-service"))
     .WithTracing(tracing => tracing
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
