@@ -1,4 +1,5 @@
-﻿using EventOrchestrationService.Contracts.Exceptions;
+﻿using EventOrchestrationService.Contracts.DTOs;
+using EventOrchestrationService.Contracts.Exceptions;
 using EventService.Application.Interfaces;
 using EventService.Domain.Entities;
 using EventService.Infrastructure.Data.Transactions;
@@ -91,5 +92,18 @@ public class EventRepository(AppDbContext dbContext) : IEventRepository
     {
         var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         return new EntityFrameworkTransaction(transaction);
+    }
+
+    public async Task<List<Event>> GetTop10Async(CancellationToken cancellationToken = default)
+    {
+        var query = Query();
+
+        var topEvents = await query
+            .Where(e => e.TotalSeats > 0)
+            .OrderByDescending(e => (e.TotalSeats - e.AvailableSeats) / (double)e.TotalSeats)
+            .Take(10)
+            .ToListAsync(cancellationToken);
+
+        return topEvents;
     }
 }

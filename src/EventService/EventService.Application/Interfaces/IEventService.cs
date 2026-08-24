@@ -1,6 +1,7 @@
 ﻿using EventOrchestrationService.Contracts.DTOs;
+using EventService.Domain.Entities;
 
-namespace EventOrchestrationService.Contracts.Interfaces;
+namespace EventService.Application.Interfaces;
 
 public interface IEventService
 {
@@ -11,4 +12,5 @@ public interface IEventService
     Task<EventContractDto> CreateEventAsync(CreateEventContractDto newEvent, CancellationToken cancellationToken);
     Task<EventContractDto?> UpdateEventAsync(int id, UpdateEventContractDto updatedEvent, CancellationToken cancellationToken);
     Task<bool> DeleteEventAsync(int id, CancellationToken cancellationToken);
+    Task<List<EventContractDto>> GetTop10Async(CancellationToken cancellationToken);
 }

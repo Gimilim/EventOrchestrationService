@@ -1,7 +1,7 @@
 ﻿using EventOrchestrationService.Contracts.DTOs;
 using EventOrchestrationService.Contracts.Enums;
 using EventOrchestrationService.Contracts.Exceptions;
-using EventOrchestrationService.Contracts.Interfaces;
+using EventService.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -36,6 +36,21 @@ public class EventController(IEventService eventService)
         int pageSize = 10, CancellationToken cancellationToken = default)
     {
         return Ok(await eventService.GetEventsAsync(title, from, to, page, pageSize, cancellationToken));
+    }
+
+    /// <summary>
+    /// Получить список топ-10 событий.
+    /// <param name="cancellationToken">Токен отмены</param>
+    /// </summary>
+    /// <returns>
+    /// Топ-10 событий
+    /// </returns>
+    /// <response code="200">Успешный возврат топ-10 событий</response>
+    [HttpGet("top")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetTop(CancellationToken cancellationToken = default)
+    {
+        return Ok(await eventService.GetTop10Async(cancellationToken));
     }
 
     /// <summary>

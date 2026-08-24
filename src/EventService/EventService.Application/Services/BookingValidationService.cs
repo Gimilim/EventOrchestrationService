@@ -12,7 +12,8 @@ public class BookingValidationService(
     IEventRepository eventRepository,
     IEventPublisher eventPublisher,
     ILogger<BookingValidationService> logger,
-    IInboxRepository inboxRepository) : IBookingValidationService
+    IInboxRepository inboxRepository,
+    ICacheService cache) : IBookingValidationService
 {
     public async Task ValidateBookingAsync(BookingCreatedEvent evt, CancellationToken cancellationToken)
     {
@@ -64,6 +65,7 @@ public class BookingValidationService(
                 await transaction.RollbackAsync(cancellationToken);
                 throw;
             }
+            await cache.RemoveAsync($"event:{evt.EventId}", cancellationToken);
         }
         else
         {
@@ -123,5 +125,6 @@ public class BookingValidationService(
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
+        await cache.RemoveAsync($"event:{evt.EventId}", cancellationToken);
     }
 }
