@@ -1,0 +1,18 @@
+﻿global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: events-service
+    static_configs:
+      - targets: ["host.docker.internal:5271"]
+    metrics_path: /metrics
+
+  - job_name: bookings-service
+    static_configs:
+      - targets: ["host.docker.internal:5009"]
+    metrics_path: /metrics
+
+  - job_name: users-service
+    static_configs:
+      - targets: ["host.docker.internal:5046"]
+    metrics_path: /metrics
